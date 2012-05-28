@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<plugin id="Dragooon:WeNotif">
+  <name>Notifications</name>
+  <author email="mail@dragooon.net" url="http://smf-media.com/">Shitiz "Dragooon" Garg</author>
+  <description>Notifications core</description>
+  <version>1.0</version>
+
+  <actions>
+    <action action="notification" function="WeNotif::action" filename="plugin" />
+  </actions>
+
+  <hooks>
+    <function point="load_theme" function="WeNotif::hook_load_theme" filename="$plugindir/plugin" />
+
+    <provides>
+      <!--
+          notification_new - Called as soon as a new notification is issued to a member
+          Params passed :
+            $notification - The notification struct object
+       -->
+      <hook type="function">notification_new</hook>
+      <!--
+          notification_callback - Called during load_theme, used for registering notifiers
+          Params passed :
+            &$notifiers - An array of <notifier> => <Notifier object>, extend this if you want to
+                          add a notifier
+       -->
+       <hook type="function">notification_callback</hook>
+    </provides>
+  </hooks>
+
+  <database>
+    <columns>
+      <column name="unread_notifications" type="int" null="no" default="0" table="{db_prefix}members" />
+    </columns>
+
+    <tables>
+      <table name="{db_prefix}notifications" if-exists="update">
+        <columns>
+          <column name="id_notification" type="int" auto="true" />
+          <column name="id_member" type="int" null="no" default="0" />
+          <column name="notifier" type="varchar" size="50" default="" />
+          <column name="id_object" type="int" null="no" default="0" />
+          <column name="time" type="int" null="no" default="0" />
+          <column name="unread" type="tinyint" size="1" unsigned="true" null="no" default="0" />
+          <column name="data" type="text" null="no" default="" />
+        </columns>
+        <index type="primary">
+          <field>id_notification</field>
+        </index>
+      </table>
+    </tables>          
+  </database>
+</plugin>
