@@ -15,6 +15,87 @@ if (!defined('WEDGE'))
 	die('File cannot be requested directly');
 
 /**
+ * Class for handling notification hooks and actions
+ */
+class WeNotif
+{
+	protected static $notifiers;
+	protected static $quick_count = 5;
+
+	/**
+	 * Hook callback for load_theme, calls notification_callback hook for registering notification hooks
+	 * Also loads notification for this user's quick view
+	 *
+	 * @static
+	 * @access public
+	 * @return void
+	 */
+	public static function hook_load_theme()
+	{
+		global $context, $user_info, $scripturl, $txt;
+
+		self::$notifiers = array();
+
+		// Register the notifiers
+		call_hook('notification_callback', array(&self::$notifiers));
+
+		// Load quick notifications
+		$context['quick_notifications'] = array();
+		if (!empty($user_info['id']))
+		{
+			$notifications = cache_get_data('quick_notification_' . $user_info['id'], 86400);
+
+			if ($notifications == null)
+			{
+				$request = wesql::query('
+					SELECT *
+					FROM {db_prefix}notifications
+					WHERE id_member = {int:member}
+					ORDER BY id_notification DESC
+					LIMIT {int:count}',
+					array(
+						'count' => self::$quick_count,
+						'member' => $user_info['id'],
+					)
+				);
+				while ($row = wesql::fetch_assoc($request))
+				{
+					// Make sure the notifier for this exists
+					if (!isset(self::$notifiers[$row['notifier']]))
+						continue;
+					
+					$context['quick_notifications'][] = new Notification($row, self::$notifiers[$row['notifier']]);
+				}
+				wesql::free_result($request);
+
+				// Cache it
+				cache_put_data('quick_notification_' . $user_info['id'], $context['quick_notifications'], 886400);
+			}
+			else
+				$context['quick_notifications'] = $notifications;
+		
+			// Get the unread count
+			$request = wesql::query('
+				SELECT unread_notifications
+				FROM {db_prefix}members
+				WHERE id_member = {int:member}
+				LIMIT 1',
+				array(
+					'member' => $user_info['id'],
+				)
+			);
+			list ($context['unread_notifications']) = wesql::fetch_row($request);
+			wesql::free_result($request);
+
+			loadPluginTemplate('Dragooon:WeNotif', 'templates/plugin');
+			loadPluginLanguage('Dragooon:WeNotif', 'languages/plugin');
+
+			wetem::first('sidebar', 'notifications_block');
+		}
+	}
+}
+
+/**
  * Notifier interface, every notifier adding their own stuff must implement this interface
  */
 interface Notifier
