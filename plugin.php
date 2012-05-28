@@ -185,6 +185,9 @@ class Notification
 
 	    	call_hook('notification_new', array($notification));
 
+	    	// Flush the cache
+	    	cache_put_data('quick_notification_' . $id_member, array(), 0);
+
 	    	return $notification;
     	}
     	else
