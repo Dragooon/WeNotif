@@ -479,7 +479,7 @@ class Notification
 	 * @access public
 	 * @return int (0, 1)
 	 */
-	public function getUnead()
+	public function getUnread()
 	{
 		return $this->unread;
 	}
