@@ -139,6 +139,16 @@ interface Notifier
 	 * @return string
 	 */
 	public function getName();
+
+	/**
+	 * Callback for handling multiple notifications on the same object
+	 *
+	 * @access public
+	 * @param Notification $notification
+	 * @param array &$data Reference to the new notification's data, if something needs to be altered
+	 * @return bool, if false then a new notification is not created but the current one's time is updated
+	 */
+	public function handleMultiple(Notification $notification, array &$data);
 }
 
 /**
@@ -173,6 +183,39 @@ class Notification
      */
     public static function issue($id_member, Notifier $notifier, $id_object, $data = array())
     {
+    	$id_object = (int) $id_object;
+    	if (empty($id_object))
+    		throw new Exception('Object cannot be empty for notification');
+ 
+    	// Do we already have a notification from this notifier on this object?
+    	$request = wesql::query('
+    		SELECT *
+    		FROM {db_prefix}notifications
+    		WHERE notifier = {string:notifier}
+    			AND id_member = {int:member}
+    			AND id_object = {int:object}
+    			AND unread = 1
+    		LIMIT 1',
+    		array(
+	    		'notifier' => $notifier->getName(),
+	    		'object' => $id_object,
+	    		'member' => $id_member,
+	    	)
+	    );
+	    // If we do, then we run it by the notifier
+	    if (wesql::num_rows($request) > 0)
+	    {
+	    	$notification = new Notification(wesql::fetch_assoc($request), $notifier);
+
+	    	// If the notifier returns false, we don't create a new notification
+	    	if (!$notifier->handleMultiple($notification, &$data))
+	    	{
+	    		$notification->updateTime();
+	    		return $notification;
+	    	}
+	    }
+	    wesql::free_result($request);
+
     	$time = time();
 
     	// Create the row
@@ -287,7 +330,7 @@ class Notification
 			SET {raw:column} = {string:value}
 			WHERE id_notification = {int:notification}',
 			array(
-				'column' => wesql::real_escape_string($column),
+				'column' => addslashes($column),
 				'value' => $value,
 				'notification' => $this->getID(),
 			)
