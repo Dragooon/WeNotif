@@ -236,6 +236,65 @@ class Notification
 	}
 
 	/**
+	 * Marks the current notification as read
+	 *
+	 * @access public
+	 * @return void
+	 */
+	public function markAsRead()
+	{
+		$this->unread = 0;
+		$this->updateCol('unread', 0);
+	}
+
+	/**
+	 * Updates the data of this notification
+	 *
+	 * @access public
+	 * @param array $data
+	 * @return void
+	 */
+	public function updateData(array $data)
+	{
+		$this->data = (array) $data;
+		$this->updateCol('data', serialize((array) $data));
+	}
+
+	/**
+	 * Updates the time of this notification
+	 *
+	 * @access public
+	 * @return void
+	 */
+	public function updateTime()
+	{
+		$this->time = time();
+		$this->updateCol('time', time());
+	}
+
+	/**
+	 * Internal function for updating a column
+	 *
+	 * @access protected
+	 * @param string $column
+	 * @param string $value
+	 * @return void
+	 */
+	protected function updateCol($column, $value)
+	{
+		wesql::query('
+			UPDATE {db_prefix}notifications
+			SET {raw:column} = {string:value}
+			WHERE id_notification = {int:notification}',
+			array(
+				'column' => wesql::real_escape_string($column),
+				'value' => $value,
+				'notification' => $this->getID(),
+			)
+		);
+	}
+
+	/**
 	 * Returns this notification's ID
 	 *
 	 * @access public
