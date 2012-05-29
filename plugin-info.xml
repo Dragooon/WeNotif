@@ -37,7 +37,7 @@
     <tables>
       <table name="{db_prefix}notifications" if-exists="update">
         <columns>
-          <column name="id_notification" type="int" auto="true" />
+          <column name="id_notification" type="int" autoincrement="yes" />
           <column name="id_member" type="int" null="no" default="0" />
           <column name="notifier" type="varchar" size="50" default="" />
           <column name="id_object" type="int" null="no" default="0" />
