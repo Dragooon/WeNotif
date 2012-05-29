@@ -65,6 +65,7 @@ class WeNotif
 					SELECT *
 					FROM {db_prefix}notifications
 					WHERE id_member = {int:member}
+						AND unread = 1
 					ORDER BY time DESC
 					LIMIT {int:count}',
 					array(
