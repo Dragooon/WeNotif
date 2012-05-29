@@ -22,7 +22,7 @@ function template_notifications_block()
 	foreach ($context['quick_notifications'] as $notification)
 	{
 		echo '
-			<p class="description" style="font-size: 1em;" onclick="document.location = \'', $scripturl, '?action=notification;area=redirect;id=', $notification->getID(), '\'">
+			<p class="description" style="font-size: 1em; cursor: pointer;" onclick="document.location = \'', $scripturl, '?action=notification;area=redirect;id=', $notification->getID(), '\'">
 				', $notification->getText(), '<br />
 				<span class="smalltext">', timeformat($notification->getTime()), '</span>
 			</p>';
