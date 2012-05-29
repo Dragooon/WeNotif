@@ -23,6 +23,18 @@ class WeNotif
 	protected static $quick_count = 5;
 
 	/**
+	 * Returns the notifiers
+	 *
+	 * @static
+	 * @access public
+	 * @return array
+	 */
+	public static function getNotifiers()
+	{
+		return self::$notifiers;
+	}
+
+	/**
 	 * Hook callback for load_theme, calls notification_callback hook for registering notification hooks
 	 * Also loads notification for this user's quick view
 	 *
