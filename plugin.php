@@ -107,6 +107,49 @@ class WeNotif
 			wetem::before('sidebar', 'notifications_block');
 		}
 	}
+
+	/**
+	 * Handles the notification action
+	 *
+	 * @static
+	 * @access public
+	 * @return void
+	 */
+	public static function action()
+	{
+		global $context, $user_info;
+
+		$area = !empty($_REQUEST['area']) ? $_REQUEST['area'] : '';
+
+		if ($area == 'redirect')
+		{
+			// We are accessing a notification and redirecting to it's target
+			$request = wesql::query('
+				SELECT *
+				FROM {db_prefix}notifications
+				WHERE id_member = {int:member}
+					AND id_notification = {int:notification}
+				LIMIT 1',
+				array(
+					'member' => $user_info['id'],
+					'notification' => (int) $_REQUEST['id'],
+				)
+			);
+
+			// Not found?
+			if (wesql::num_rows($request) == 0)
+				fatal_lang_error('notification_not_found');
+			
+			$notification = wesql::fetch_assoc($request);
+			$notification = new Notification($notification, self::$notifiers[$notification['notifier']]);
+
+			// Mark this as read
+			$notification->markAsRead();
+
+			// Redirect to the target
+			redirectexit($notification->getURL());
+		}
+	} 
 }
 
 /**
