@@ -19,7 +19,7 @@ if (!defined('WEDGE'))
  */
 class WeNotif
 {
-	protected static $notifiers;
+	protected static $notifiers = array();
 	protected static $quick_count = 5;
 
 	/**
@@ -34,10 +34,8 @@ class WeNotif
 	{
 		global $context, $user_info, $scripturl, $txt;
 
-		self::$notifiers = array();
-
 		// Register the notifiers
-		call_hook('notification_callback', array(self::$notifiers));
+		call_hook('notification_callback', array(&self::$notifiers));
 
 		foreach (self::$notifiers as $notifier => $object)
 			if (!($object instanceof Notifier))
