@@ -18,7 +18,7 @@ function template_notifications_block()
 	echo '
 	<section>
 		<span class="note', $context['unread_notifications'] ? 'nice' : '', '" style="font-size: 9pt;">', $context['unread_notifications'], '</span>&nbsp;
-		<a href="', $scripturl, '?action=notifications" class="title">', $txt['notification_unread_title'], '</a>';
+		<a href="', $scripturl, '?action=notification" class="title">', $txt['notification_unread_title'], '</a>';
 	foreach ($context['quick_notifications'] as $notification)
 	{
 		echo '
