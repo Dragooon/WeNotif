@@ -73,7 +73,7 @@ class WeNotif
 				wesql::free_result($request);
 
 				// Cache it
-				cache_put_data('quick_notification_' . $user_info['id'], $context['quick_notifications'], 886400);
+				cache_put_data('quick_notification_' . $user_info['id'], $context['quick_notifications'], 86400);
 			}
 			else
 				$context['quick_notifications'] = $notifications;
