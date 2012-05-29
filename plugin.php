@@ -150,6 +150,29 @@ class WeNotif
 			// Redirect to the target
 			redirectexit($notification->getURL());
 		}
+
+		// Otherwise we're displaying all the notifications this user has
+		$request = wesql::query('
+			SELECT *
+			FROM {db_prefix}notifications
+			WHERE id_member = {int:member}
+			ORDER BY time DESC',
+			array(
+				'member' => $user_info['id'],
+			)
+		);
+		$context['notifications'] = array();
+		while ($row = wesql::fetch_assoc($request))
+		{
+			// Make sure the notifier for this exists
+			if (!isset(self::$notifiers[$row['notifier']]))
+				continue;
+					
+			$context['notifications'][] = new Notification($row, self::$notifiers[$row['notifier']]);
+		}
+		wesql::free_result($request);
+
+		wetem::load('notifications_list');
 	} 
 }
 

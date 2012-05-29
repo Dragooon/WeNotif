@@ -11,5 +11,6 @@
  * @version 1.0
  */
 
+$txt['notifications'] = 'Notifications';
 $txt['notification_unread_title'] = 'Unread Notifications';
 ?>

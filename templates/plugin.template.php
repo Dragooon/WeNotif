@@ -30,4 +30,21 @@ function template_notifications_block()
 	echo '
 	</section>';
 }
+
+function template_notifications_list()
+{
+	global $txt, $context, $settings, $scripturl;
+
+	echo '
+		<we:title>', $txt['notifications'], '</we:title>';
+	foreach ($context['notifications'] as $notification)
+	{
+		echo '
+			<p class="', $notification->getUnread() ? 'description' : 'wrc windowbg', '  " style="font-size: 1em; cursor: pointer;"
+				onclick="document.location = \'', $scripturl, '?action=notification;area=redirect;id=', $notification->getID(), '\'">
+				', $notification->getText(), '<br />
+				<span class="smalltext">', timeformat($notification->getTime()), '</span>
+			</p>';
+	}
+}
 ?>
