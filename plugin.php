@@ -329,8 +329,24 @@ class Notification
 	 */
 	public function markAsRead()
 	{
+		if ($this->unread == 0)
+			return;
+		
 		$this->unread = 0;
 		$this->updateCol('unread', 0);
+
+    	// Update the unread notification count
+    	wesql::query('
+    		UPDATE {db_prefix}members
+    		SET unread_notifications = unread_notifications - 1
+    		WHERE id_member = {int:member}',
+    		array(
+	    		'member' => $this->getMember(),
+	    	)
+	    );
+
+		// Flush the cache
+		cache_put_data('quick_notification_' . $id_member, array(), 0);
 	}
 
 	/**
