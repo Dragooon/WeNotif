@@ -37,7 +37,11 @@ class WeNotif
 		self::$notifiers = array();
 
 		// Register the notifiers
-		call_hook('notification_callback', array(&self::$notifiers));
+		call_hook('notification_callback', array(self::$notifiers));
+
+		foreach (self::$notifiers as $notifier => $object)
+			if (!($object instanceof Notifier))
+				unset(self::$notifiers[$notifier]);
 
 		// Load quick notifications
 		$context['quick_notifications'] = array();
