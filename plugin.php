@@ -186,7 +186,14 @@ class Notification
     	if (!empty($id_notification))
     	{
     		// Update the unread notification count
-    		updateMemberData($id_member, array('unread_notifications' => '+'));
+    		wesql::query('
+    			UPDATE {db_prefix}members
+    			SET unread_notifications = unread_notifications + 1
+    			WHERE id_member = {int:member}',
+    			array(
+	    			'member' => $id_member,
+	    		)
+	    	);
 
     		$notification = new self(array(
 	    		'id_notification' => $id_notification,
