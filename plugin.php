@@ -65,7 +65,7 @@ class WeNotif
 					SELECT *
 					FROM {db_prefix}notifications
 					WHERE id_member = {int:member}
-					ORDER BY id_notification DESC
+					ORDER BY time DESC
 					LIMIT {int:count}',
 					array(
 						'count' => self::$quick_count,
