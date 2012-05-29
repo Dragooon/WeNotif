@@ -104,7 +104,7 @@ class WeNotif
 			loadPluginTemplate('Dragooon:WeNotif', 'templates/plugin');
 			loadPluginLanguage('Dragooon:WeNotif', 'languages/plugin');
 
-			wetem::first('sidebar', 'notifications_block');
+			wetem::before('sidebar', 'notifications_block');
 		}
 	}
 }
