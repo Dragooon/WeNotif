@@ -166,6 +166,14 @@ interface Notifier
 	 * @return bool, if false then a new notification is not created but the current one's time is updated
 	 */
 	public function handleMultiple(Notification $notification, array &$data);
+
+	/**
+	 * Returns the title and description of the notifier for the profile area
+	 *
+	 * @access public
+	 * @return array(title, description)
+	 */
+	public function getProfileDesc();
 }
 
 /**
