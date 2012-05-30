@@ -287,6 +287,7 @@ class Notification
 			WHERE id_member = {int:member}',
 			array(
 				'count' => count($notifications),
+				'member' => (int) $id_member,
 			)
 		);
 
