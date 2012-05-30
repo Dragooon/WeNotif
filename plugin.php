@@ -27,11 +27,12 @@ class WeNotif
 	 *
 	 * @static
 	 * @access public
+	 * @param string $notifier If specified, only returns this notifier
 	 * @return array
 	 */
-	public static function getNotifiers()
+	public static function getNotifiers($notifier = null)
 	{
-		return self::$notifiers;
+		return !empty($notifier) ? self::$notifiers[$notifier] : self::$notifiers;
 	}
 
 	/**
