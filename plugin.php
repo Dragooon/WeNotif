@@ -61,27 +61,7 @@ class WeNotif
 
 			if ($notifications == null)
 			{
-				$request = wesql::query('
-					SELECT *
-					FROM {db_prefix}notifications
-					WHERE id_member = {int:member}
-						AND unread = 1
-					ORDER BY time DESC
-					LIMIT {int:count}',
-					array(
-						'count' => self::$quick_count,
-						'member' => $user_info['id'],
-					)
-				);
-				while ($row = wesql::fetch_assoc($request))
-				{
-					// Make sure the notifier for this exists
-					if (!isset(self::$notifiers[$row['notifier']]))
-						continue;
-					
-					$context['quick_notifications'][] = new Notification($row, self::$notifiers[$row['notifier']]);
-				}
-				wesql::free_result($request);
+				$context['quick_notifications'] = Notification::get(null, $user_info['id'], self::$quick_count, true);
 
 				// Cache it
 				cache_put_data('quick_notification_' . $user_info['id'], $context['quick_notifications'], 86400);
@@ -125,24 +105,11 @@ class WeNotif
 		if ($area == 'redirect')
 		{
 			// We are accessing a notification and redirecting to it's target
-			$request = wesql::query('
-				SELECT *
-				FROM {db_prefix}notifications
-				WHERE id_member = {int:member}
-					AND id_notification = {int:notification}
-				LIMIT 1',
-				array(
-					'member' => $user_info['id'],
-					'notification' => (int) $_REQUEST['id'],
-				)
-			);
+			list ($notification) = Notification::get((int) $_REQUEST['id'], $user_info['id']);
 
 			// Not found?
-			if (wesql::num_rows($request) == 0)
+			if (empty($notification))
 				fatal_lang_error('notification_not_found');
-			
-			$notification = wesql::fetch_assoc($request);
-			$notification = new Notification($notification, self::$notifiers[$notification['notifier']]);
 
 			// Mark this as read
 			$notification->markAsRead();
@@ -152,25 +119,7 @@ class WeNotif
 		}
 
 		// Otherwise we're displaying all the notifications this user has
-		$request = wesql::query('
-			SELECT *
-			FROM {db_prefix}notifications
-			WHERE id_member = {int:member}
-			ORDER BY time DESC',
-			array(
-				'member' => $user_info['id'],
-			)
-		);
-		$context['notifications'] = array();
-		while ($row = wesql::fetch_assoc($request))
-		{
-			// Make sure the notifier for this exists
-			if (!isset(self::$notifiers[$row['notifier']]))
-				continue;
-					
-			$context['notifications'][] = new Notification($row, self::$notifiers[$row['notifier']]);
-		}
-		wesql::free_result($request);
+		$context['notifications'] = Notification::get(null, $user_info['id'], 0);
 
 		wetem::load('notifications_list');
 	} 
@@ -235,6 +184,70 @@ class Notification
 	protected $time;
 	protected $unread;
 	protected $data;
+
+	/**
+	 * Gets the notifications
+	 *
+	 * @static
+	 * @access public
+	 * @param int $id If specified, then fetches the notification of this ID
+	 * @param int $id_member If specified, then fetches the notification of this member
+	 * @param int $count 0 for no limiit
+	 * @param bool $unread (Optional) Whether to fetch only unread notifications or not
+	 * @param int $object (Optional) If specified, limits it down to one object
+	 * @param string $notifier (Optional) If specified, limits it down to the notifier
+	 * @return array
+	 */
+	public static function get($id = null, $id_member = null, $count = 1, $unread = false, $object = null, $notifier = '')
+	{
+		if (empty($id) && empty($id_member))
+			return false;
+
+		$request = wesql::query('
+			SELECT *
+			FROM {db_prefix}notifications
+			WHERE ' . (!empty($id) ? 'id_notification = {int:id}' : '1=1') . (!empty($id_member) ? '
+				AND id_member = {int:member}' : '') . ($unread ? '
+				AND unread = 1' : '') . (!empty($object) ? '
+				AND object = {string:object}' : '') . (!empty($notifier) ? '
+				AND notifier = {string:notifier}' : '') . '
+			ORDER BY time DESC' . (!empty($count) ? '
+			LIMIT {int:count}' : ''),
+			array(
+				'id' => (int) $id,
+				'member' => (int) $id_member,
+				'count' => (int) $count,
+				'object' => (int) $object,
+				'notifier' => $notifier
+			));
+		return self::fetchNotifications($request);
+	}
+
+	/**
+	 * Fetches notifications from a query and arranges them in an array
+	 *
+	 * @static
+	 * @access protected
+	 * @return array
+	 */
+	protected static function fetchNotifications($request)
+	{
+		$notifications = array();
+		$notifiers = WeNotif::getNotifiers();
+
+		while ($row = wesql::fetch_assoc($request))
+		{
+			// Make sure the notifier for this exists
+			if (!isset($notifiers[$row['notifier']]))
+				continue;
+					
+			$notifications[] = new Notification($row, $notifiers[$row['notifier']]);
+		}
+
+		wesql::free_result($request);
+
+		return $notifications;
+	}
 
 	/**
 	 * Issues a new notification to a member, also calls the hook
