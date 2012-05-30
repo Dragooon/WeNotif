@@ -313,6 +313,23 @@ class Notification
     	if (empty($id_object))
     		throw new Exception('Object cannot be empty for notification');
  
+ 		// Check for disabled notifications
+ 		//!!! Speed this thing up, an additional query should preferably be not required
+ 		$request = wesql::query('
+ 			SELECT disabled_notifiers
+ 			FROM {db_prefix}members
+ 			WHERE id_member = {int:member}
+ 			LIMIT 1',
+ 			array(
+	 			'member' => $id_member,
+	 		)
+	 	);
+	 	list ($disabled_notifiers) = wesql::fetch_row($request);
+	 	wesql::free_result($request);
+
+	 	if (in_array($notifier->getName(), explode(',', $disabled_notifiers)))
+	 		return false;
+
     	// Do we already have a notification from this notifier on this object?
     	$request = wesql::query('
     		SELECT *

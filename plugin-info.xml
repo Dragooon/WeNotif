@@ -32,6 +32,7 @@
   <database>
     <columns>
       <column name="unread_notifications" type="int" null="no" default="0" table="{db_prefix}members" />
+      <column name="disabled_notifiers" type="varchar" size="255" default="" table="{db_prefix}members" />
     </columns>
 
     <tables>
