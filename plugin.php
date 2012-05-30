@@ -262,37 +262,37 @@ class Notification
 	 */
 	public static function markReadForNotifier($id_member, Notifier $notifier, $id_object)
 	{
-		// Get the plausible notifications which we have to mark read
-		$notifications = self::get(null, $id_member, 0, true, $id_object, $notifier->getName());
-
-		if (empty($notifications))
-			return true;
-		
-		$ids = array();
-		foreach ($notifications as $notif)
-			$ids[] = $notif->getID();
-
 		// Oh goody, we have stuff to mark as unread
 		wesql::query('
 			UPDATE {db_prefix}notifications
 			SET unread = 0
-			WHERE id_notification IN ({array_int:notifications})',
+			WHERE id_member = {int:member}
+				AND id_object = {int:object}
+				AND notifier = {string:notifier}
+				AND unread = 1',
 			array(
-				'notifications' => $ids,
+				'member' => $id_member,
+				'object' => $id_object,
+				'notifier' => $notifier->getName(),
 			)
 		);
-		wesql::query('
-			UPDATE {db_prefix}members
-			SET unread_notifications = unread_notifications - {int:count}
-			WHERE id_member = {int:member}',
-			array(
-				'count' => count($notifications),
-				'member' => (int) $id_member,
-			)
-		);
+		$affected_rows = wesql::affected_rows();
 
-		// Flush the cache
-		cache_put_data('quick_notification_' . $id_member, array(), 0);
+		if ($affected_rows > 0)
+		{
+			wesql::query('
+				UPDATE {db_prefix}members
+				SET unread_notifications = unread_notifications - {int:count}
+				WHERE id_member = {int:member}',
+				array(
+					'count' => $affected_rows,
+					'member' => (int) $id_member,
+				)
+			);
+
+			// Flush the cache
+			cache_put_data('quick_notification_' . $id_member, array(), 0);
+		}
 	}
 
 	/**
