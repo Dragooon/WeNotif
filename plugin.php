@@ -123,7 +123,83 @@ class WeNotif
 		$context['notifications'] = Notification::get(null, $user_info['id'], 0);
 
 		wetem::load('notifications_list');
-	} 
+	}
+
+	/**
+	 * Hook callback for "profile_areas"
+	 *
+	 * @access public
+	 * @param array &$profile_areas
+	 * @return void
+	 */
+	public function hook_profile_areas(&$profile_areas)
+	{
+		global $scripturl, $txt, $context;
+
+		$profile_areas['edit_profile']['areas']['notifications'] = array(
+			'label' => $txt['notifications'],
+			'enabled' => true,
+			'function' => 'WeNotif_profile',
+			'permission' => array(
+				'own' => array('profile_extra_own'),
+			),
+		);
+	}
+
+	/**
+	 * Handles our profile area
+	 *
+	 * @access public
+	 * @param int $memID
+	 * @return void
+	 */
+	public function profile($memID)
+	{
+		global $context, $txt, $user_info, $scripturl;
+
+		// Not the same user? hell no
+		if ($memID != $user_info['id'])
+			fatal_lang_error('access_denied');
+		
+		$notifiers = self::getNotifiers();
+
+		if (!empty($_POST['save']))
+		{
+			$_POST['disabled_notifiers'] = (array) $_POST['disabled_notifiers'];
+			foreach ($_POST['disabled_notifiers'] as $k => $v)
+				if (!in_array($v, array_keys($notifiers)))
+					unset ($_POST['disabled_notifiers'][$k]);
+			
+			updateMemberData($user_info['id'], array(
+				'disabled_notifiers' => implode(',', $_POST['disabled_notifiers']),
+			));
+
+			redirectexit('action=profile;area=notifications');
+		}
+
+		$context['notifiers'] = $notifiers;
+
+ 		$request = wesql::query('
+ 			SELECT disabled_notifiers
+ 			FROM {db_prefix}members
+ 			WHERE id_member = {int:member}
+ 			LIMIT 1',
+ 			array(
+	 			'member' => $user_info['id'],
+	 		)
+	 	);
+	 	list ($disabled_notifiers) = wesql::fetch_row($request);
+	 	wesql::free_result($request);
+
+		$context['disabled_notifiers'] = explode(',', $disabled_notifiers);
+
+		wetem::load('wenotif_profile');
+	}
+}
+
+function WeNotif_profile($memID)
+{
+	return WeNotif::profile($memID);
 }
 
 /**
@@ -168,7 +244,7 @@ interface Notifier
 	public function handleMultiple(Notification $notification, array &$data);
 
 	/**
-	 * Returns the title and description of the notifier for the profile area
+	 * Returns the title and description of the notifier for the profile area in order to disable/enable them
 	 *
 	 * @access public
 	 * @return array(title, description)

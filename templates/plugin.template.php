@@ -47,4 +47,42 @@ function template_notifications_list()
 			</p>';
 	}
 }
+
+function template_wenotif_profile()
+{
+	global $scripturl, $txt, $context, $settings;
+
+	echo '
+	<we:cat>
+		', $txt['notifications'], '
+	</we:cat>
+	<p class="windowbg description">', $txt['notification_profile_desc'], '</p>
+	<form action="', $scripturl, '?action=profile;area=notifications" id="creator" method="post">
+		<div class="windowbg wrc">
+	
+			<dl>';
+	
+	foreach ($context['notifiers'] as $notifier)
+	{
+		list ($name, $desc) = $notifier->getProfileDesc();
+
+		echo '
+				<dt>
+					<strong>', sprintf($txt['notification_disable'], $name), '</strong>
+					<dfn>', $desc, '</dfn>
+				</dt>
+				<dd>
+					<input type="checkbox" name="disabled_notifiers[]" value="', $notifier->getName(), '"', in_array($notifier->getName(), $context['disabled_notifiers']) ? ' checked' : '', ' />
+				</dd>';
+	}
+
+	echo '
+			</dl>
+			<hr />
+			<div class="right">
+				<input type="submit" name="save" value="', $txt['save'], '" class="submit" />
+			</div>
+		</div>
+	</form>';
+}
 ?>
