@@ -210,7 +210,7 @@ class Notification
 			WHERE ' . (!empty($id) ? 'id_notification = {int:id}' : '1=1') . (!empty($id_member) ? '
 				AND id_member = {int:member}' : '') . ($unread ? '
 				AND unread = 1' : '') . (!empty($object) ? '
-				AND id_object = {string:object}' : '') . (!empty($notifier) ? '
+				AND id_object = {int:object}' : '') . (!empty($notifier) ? '
 				AND notifier = {string:notifier}' : '') . '
 			ORDER BY time DESC' . (!empty($count) ? '
 			LIMIT {int:count}' : ''),
