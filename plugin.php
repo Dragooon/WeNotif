@@ -250,6 +250,50 @@ class Notification
 	}
 
 	/**
+	 * Marks notification as read for a specific member, notifier and object
+	 *
+	 * @static
+	 * @access public
+	 * @param int $id_member
+	 * @param Notifier $notifier
+	 * @param int $id_object
+	 * @return void
+	 */
+	public static function markReadForNotifier($id_member, Notifier $notifier, $id_object)
+	{
+		// Get the plausible notifications which we have to mark read
+		$notifications = self::get(null, $id_member, 0, true, $id_object, $notifier->getName());
+
+		if (empty($notifications))
+			return true;
+		
+		$ids = array();
+		foreach ($notifications as $notif)
+			$ids[] = $notif->getID();
+
+		// Oh goody, we have stuff to mark as unread
+		wesql::query('
+			UPDATE {db_prefix}notifications
+			SET unread = 0
+			WHERE id_notification IN ({array_int:notifications})',
+			array(
+				'notifications' => $ids,
+			)
+		);
+		wesql::query('
+			UPDATE {db_prefix}members
+			SET unread_notifications = unread_notifications - {int:count}
+			WHERE id_member = {int:member}',
+			array(
+				'count' => count($notifications),
+			)
+		);
+
+		// Flush the cache
+		cache_put_data('quick_notification_' . $id_member, array(), 0);
+	}
+
+	/**
 	 * Issues a new notification to a member, also calls the hook
 	 *
 	 * @static
