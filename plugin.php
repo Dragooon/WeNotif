@@ -202,7 +202,7 @@ class Notification
 	public static function get($id = null, $id_member = null, $count = 1, $unread = false, $object = null, $notifier = '')
 	{
 		if (empty($id) && empty($id_member))
-			return false;
+			return array();
 
 		$request = wesql::query('
 			SELECT *
@@ -219,7 +219,7 @@ class Notification
 				'member' => (int) $id_member,
 				'count' => (int) $count,
 				'object' => (int) $object,
-				'notifier' => $notifier
+				'notifier' => $notifier,
 			));
 		return self::fetchNotifications($request);
 	}
