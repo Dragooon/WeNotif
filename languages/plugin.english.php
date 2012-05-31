@@ -13,7 +13,7 @@
 
 $txt['notifications'] = 'Notifications';
 $txt['notification_unread_title'] = 'Unread Notifications';
-$txt['notification_disable'] = 'Disable notifications from "%s"?';
+$txt['notification_disable'] = 'Disable notifications?';
 $txt['notification_profile_desc'] = 'You can disable notifications from specific notifiers here, please note that disabling notifications will only prevent new notifications but will keep the existing ones';
 $txt['scheduled_task_notification_prune'] = 'Prune read notifications';
 $txt['scheduled_task_desc_notification_prune'] = 'Prune read notifications which are older than the specified days in Admin > Plugins > Notifications';

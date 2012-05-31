@@ -137,7 +137,7 @@ class WeNotif
 	{
 		global $scripturl, $txt, $context;
 
-		$profile_areas['edit_profile']['areas']['notifications'] = array(
+		$profile_areas['edit_profile']['areas']['notification'] = array(
 			'label' => $txt['notifications'],
 			'enabled' => true,
 			'function' => 'WeNotif_profile',
