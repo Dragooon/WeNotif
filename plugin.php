@@ -54,6 +54,8 @@ class WeNotif
 			if (!($object instanceof Notifier))
 				unset(self::$notifiers[$notifier]);
 
+		loadPluginLanguage('Dragooon:WeNotif', 'languages/plugin');
+
 		// Load quick notifications
 		$context['quick_notifications'] = array();
 		if (!empty($user_info['id']))
@@ -84,7 +86,6 @@ class WeNotif
 			wesql::free_result($request);
 
 			loadPluginTemplate('Dragooon:WeNotif', 'templates/plugin');
-			loadPluginLanguage('Dragooon:WeNotif', 'languages/plugin');
 
 			wetem::before('sidebar', 'notifications_block');
 		}
@@ -195,11 +196,37 @@ class WeNotif
 
 		wetem::load('wenotif_profile');
 	}
+
+	/**
+	 * Handles routinely pruning notifications older than x days
+	 *
+	 * @static
+	 * @access public
+	 * @return void
+	 */
+	public function scheduled()
+	{
+		global $settings;
+
+		wesql::query('
+			DELETE FROM {db_prefix}notifications
+			WHERE unread = 0
+				AND time < {int:time}',
+			array(
+				'time' => time() - ($settings['notifications_prune_days'] * 86400),
+			)
+		);
+	}
 }
 
 function WeNotif_profile($memID)
 {
 	return WeNotif::profile($memID);
+}
+
+function scheduled_notification_prune()
+{
+	return WeNotif::scheduled();
 }
 
 /**

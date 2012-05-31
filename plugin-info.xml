@@ -53,4 +53,18 @@
       </table>
     </tables>          
   </database>
+
+  <settings>
+    <setting name="notifications_prune_days" default="5" />
+  </settings>
+
+  <settings-page area="notifications">
+    <load-language file="plugin" />
+    <desc name="notification_admin_desc" />
+    <int name="notifications_prune_days" />
+  </settings-page>
+
+  <scheduledtasks>
+    <task runevery="1" runfreq="day" name="notification_prune" file="$plugindir/plugin" />
+  </scheduledtasks> 
 </plugin>
