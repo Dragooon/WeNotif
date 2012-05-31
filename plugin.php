@@ -164,22 +164,6 @@ class WeNotif
 		
 		$notifiers = self::getNotifiers();
 
-		if (!empty($_POST['save']))
-		{
-			$_POST['disabled_notifiers'] = (array) $_POST['disabled_notifiers'];
-			foreach ($_POST['disabled_notifiers'] as $k => $v)
-				if (!in_array($v, array_keys($notifiers)))
-					unset ($_POST['disabled_notifiers'][$k]);
-			
-			updateMemberData($user_info['id'], array(
-				'disabled_notifiers' => implode(',', $_POST['disabled_notifiers']),
-			));
-
-			redirectexit('action=profile;area=notifications');
-		}
-
-		$context['notifiers'] = $notifiers;
-
  		$request = wesql::query('
  			SELECT disabled_notifiers
  			FROM {db_prefix}members
@@ -192,9 +176,81 @@ class WeNotif
 	 	list ($disabled_notifiers) = wesql::fetch_row($request);
 	 	wesql::free_result($request);
 
-		$context['disabled_notifiers'] = explode(',', $disabled_notifiers);
+		$disabled_notifiers = explode(',', $disabled_notifiers);
 
-		wetem::load('wenotif_profile');
+		// Store which settings belong to which notifier
+		$settings_map = array();
+
+		// Assemble the config_vars for the entire page
+		$config_vars = array();
+		foreach ($notifiers as $notifier)
+		{
+			list ($title, $desc, $notifier_config) = $notifier->getProfile($user_info['id']);
+
+			// Add the title and desc into the array
+			$config_vars[] = array('var_message', 'title_' . $notifier->getName(),
+									'text_label' => '<strong style="font-size: 1.5em;">' . $title . '</strong>',
+									'subtext' => $desc);
+
+			// Add the disable setting
+			$config_vars[] = array('check', 'disable_' . $notifier->getName(), 
+									'value' => in_array($notifier->getName(), $disabled_notifiers),
+									'text_label' => $txt['notification_disable']);
+
+			// Merge this with notifier config
+			$config_vars = array_merge($config_vars, $notifier_config);
+
+			// Map the settings
+			foreach ($notifier_config as $config)
+				if (!empty($config) && !empty($config[1]) && !in_array($config[0], array('message', 'warning', 'title', 'desc')))
+					$settings_map[$config[1]] = $notifier->getName();
+			
+			$config_vars[] = '';
+		}
+
+		unset($config_vars[count($config_vars) - 1]);
+
+		// Saving the settings?
+		if (isset($_GET['save']))
+		{
+			$disabled = array();
+			foreach ($notifiers as $notifier)
+				if (!empty($_POST['disable_' . $notifier->getName()]))
+					$disabled[] = $notifier->getName();
+			
+			updateMemberData($user_info['id'], array(
+				'disabled_notifiers' => implode(',', $disabled),
+			));
+
+			// Store the notifier settings
+			$notifier_settings = array();
+			foreach ($settings_map as $setting => $notifier)
+			{
+				if (empty($notifier_settings[$notifier]))
+					$notifier_settings[$notifier] = array();
+				
+				if (!empty($_POST[$setting]))
+					$notifier_settings[$notifier][$setting] = $_POST[$setting];
+			}
+
+			// Call the notifier callback
+			foreach ($notifier_settings as $notifier => $settings)
+				$notifiers[$notifier]->saveProfile($user_info['id'], $settings);
+
+			redirectexit('action=profile;area=notification');
+		}
+
+		// Load the template and form
+		loadSource('ManageServer');
+		loadTemplate('Admin');
+
+		prepareDBSettingContext($config_vars);
+
+		$context['settings_title'] = $txt['notifications'];
+		$context['settings_message'] = $txt['notification_profile_desc'];
+		$context['post_url'] = $scripturl . '?action=profile;area=notification;save';
+
+		wetem::load('show_settings');
 	}
 
 	/**
@@ -271,12 +327,25 @@ interface Notifier
 	public function handleMultiple(Notification $notification, array &$data);
 
 	/**
-	 * Returns the title and description of the notifier for the profile area in order to disable/enable them
+	 * Returns the elements for notification's profile area
+	 * The third parameter of the array, config_vars, is same as the settings config vars specified in
+	 * various settings page
 	 *
 	 * @access public
-	 * @return array(title, description)
+	 * @param int $id_member The ID of the member whose profile is currently being accessed
+	 * @return array(title, description, config_vars)
 	 */
-	public function getProfileDesc();
+	public function getProfile($id_member);
+
+	/**
+	 * Callback for profile area, called when saving the profile area
+	 *
+	 * @access public
+	 * @param int $id_member The ID of the member whose profile is currently being accessed
+	 * @param array $settings A key => value pair of the fed settings
+	 * @return void
+	 */
+	public function saveProfile($id_member, array $settings);
 }
 
 /**
