@@ -165,7 +165,7 @@ class WeNotif
 		$notifiers = self::getNotifiers();
 
  		$request = wesql::query('
- 			SELECT disabled_notifiers
+ 			SELECT disabled_notifiers, email_notifiers
  			FROM {db_prefix}members
  			WHERE id_member = {int:member}
  			LIMIT 1',
@@ -173,10 +173,11 @@ class WeNotif
 	 			'member' => $user_info['id'],
 	 		)
 	 	);
-	 	list ($disabled_notifiers) = wesql::fetch_row($request);
+	 	list ($disabled_notifiers, $email_notifiers) = wesql::fetch_row($request);
 	 	wesql::free_result($request);
 
 		$disabled_notifiers = explode(',', $disabled_notifiers);
+		$email_notifiers = explode(',', $email_notifiers);
 
 		// Store which settings belong to which notifier
 		$settings_map = array();
@@ -197,6 +198,11 @@ class WeNotif
 									'value' => in_array($notifier->getName(), $disabled_notifiers),
 									'text_label' => $txt['notification_disable']);
 
+			// Add the e-mail setting
+			$config_vars[] = array('check', 'email_' . $notifier->getName(),
+									'value' => in_array($notifier->getName(), $email_notifiers),
+									'text_label' => $txt['notification_email']);
+
 			// Merge this with notifier config
 			$config_vars = array_merge($config_vars, $notifier_config);
 
@@ -214,12 +220,18 @@ class WeNotif
 		if (isset($_GET['save']))
 		{
 			$disabled = array();
+			$email = array();
 			foreach ($notifiers as $notifier)
+			{
 				if (!empty($_POST['disable_' . $notifier->getName()]))
 					$disabled[] = $notifier->getName();
-			
+				if (!empty($_POST['email_' . $notifier->getName()]))
+					$email[] = $notifier->getName();
+			}
+
 			updateMemberData($user_info['id'], array(
 				'disabled_notifiers' => implode(',', $disabled),
+				'email_notifiers' => implode(',', $email),
 			));
 
 			// Store the notifier settings
@@ -346,6 +358,17 @@ interface Notifier
 	 * @return void
 	 */
 	public function saveProfile($id_member, array $settings);
+
+	/**
+	 * E-mail handler, must be present since the user has the ability to receive e-mail
+	 * from any notifier
+	 *
+	 * @access public
+	 * @param Notification $notification
+	 * @param array $email_data Any additional e-mail data passed to Notification::issue function
+	 * @return array(subject, body)
+	 */
+	public function getEmail(Notification $notification, array $email_data);
 }
 
 /**
@@ -484,19 +507,20 @@ class Notification
 	 * @param Notifier $notifier
 	 * @param int $id_object
      * @param array $data
+     * @param array $email_data Any additional data you may want to pass to the e-mail handler
      * @return Notification
      * @throws Exception, upon the failure of creating a notification for whatever reason
      */
-    public static function issue($id_member, Notifier $notifier, $id_object, $data = array())
+    public static function issue($id_member, Notifier $notifier, $id_object, $data = array(), $email_data = array())
     {
     	$id_object = (int) $id_object;
     	if (empty($id_object))
     		throw new Exception('Object cannot be empty for notification');
  
- 		// Check for disabled notifications
+ 		// Check for disabled notifications, also check if an e-mail needs to be sent
  		//!!! Speed this thing up, an additional query should preferably be not required
  		$request = wesql::query('
- 			SELECT disabled_notifiers
+ 			SELECT disabled_notifiers, email_notifiers, email_address
  			FROM {db_prefix}members
  			WHERE id_member = {int:member}
  			LIMIT 1',
@@ -504,11 +528,14 @@ class Notification
 	 			'member' => $id_member,
 	 		)
 	 	);
-	 	list ($disabled_notifiers) = wesql::fetch_row($request);
+	 	list ($disabled_notifiers, $email_notifiers, $email_address) = wesql::fetch_row($request);
 	 	wesql::free_result($request);
 
 	 	if (in_array($notifier->getName(), explode(',', $disabled_notifiers)))
 	 		return false;
+
+	 	// E-mail?
+	 	$send_email = in_array($notifier->getName(), explode(',', $email_notifiers));
 
     	// Do we already have a notification from this notifier on this object?
     	$request = wesql::query('
@@ -571,6 +598,16 @@ class Notification
 	    	), $notifier);
 
 	    	call_hook('notification_new', array($notification));
+
+	    	// Send the e-mail
+	    	if ($send_email)
+	    	{
+	    		loadSource('Subs-Post');
+
+	    		list ($subject, $body) = $notifier->getEmail($notification, $email_data);
+
+	    		sendmail($emaiL_address, $subject, $body);
+	    	}
 
 	    	// Flush the cache
 	    	cache_put_data('quick_notification_' . $id_member, array(), 0);
