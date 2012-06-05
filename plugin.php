@@ -119,6 +119,8 @@ class WeNotif
 			// Redirect to the target
 			redirectexit($notification->getURL());
 		}
+		elseif (!empty($area) && !empty(self::$notifiers[$area]) && is_callable(self::$notifiers[$area], 'action'))
+			return self::$notifiers[$area]->action();
 
 		// Otherwise we're displaying all the notifications this user has
 		$context['notifications'] = Notification::get(null, $user_info['id'], 0);
