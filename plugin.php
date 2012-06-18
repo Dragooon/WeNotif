@@ -560,7 +560,7 @@ class Notification
 	    	$notification = new Notification(wesql::fetch_assoc($request), $notifier);
 
 	    	// If the notifier returns false, we don't create a new notification
-	    	if (!$notifier->handleMultiple($notification, &$data))
+	    	if (!$notifier->handleMultiple($notification, $data))
 	    	{
 	    		$notification->updateTime();
 	    		return $notification;
