@@ -131,11 +131,12 @@ class WeNotif
 	/**
 	 * Hook callback for "profile_areas"
 	 *
+	 * @static
 	 * @access public
 	 * @param array &$profile_areas
 	 * @return void
 	 */
-	public function hook_profile_areas(&$profile_areas)
+	public static function hook_profile_areas(&$profile_areas)
 	{
 		global $scripturl, $txt, $context;
 
@@ -152,11 +153,12 @@ class WeNotif
 	/**
 	 * Handles our profile area
 	 *
+	 * @static
 	 * @access public
 	 * @param int $memID
 	 * @return void
 	 */
-	public function profile($memID)
+	public static function profile($memID)
 	{
 		global $context, $txt, $user_info, $scripturl;
 
@@ -274,7 +276,7 @@ class WeNotif
 	 * @access public
 	 * @return void
 	 */
-	public function scheduled()
+	public static function scheduled()
 	{
 		global $settings;
 
