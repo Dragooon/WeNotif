@@ -21,6 +21,7 @@ class WeNotif
 {
 	protected static $notifiers = array();
 	protected static $quick_count = 5;
+	protected static $disabled = array();
 
 	/**
 	 * Returns the notifiers
@@ -33,6 +34,21 @@ class WeNotif
 	public static function getNotifiers($notifier = null)
 	{
 		return !empty($notifier) ? self::$notifiers[$notifier] : self::$notifiers;
+	}
+
+	/**
+	 * Checks if a notifier is disabled or not for this user
+	 *
+	 * @static
+	 * @access public
+	 * @param Notifier $notifier
+	 * @return bool
+	 */
+	public static function isNotifierDisabled(Notifier $notifier)
+	{
+		global $user_info;
+
+		return !$user_info['is_guest'] && in_array($notifier->getName(), $disabled);
 	}
 
 	/**
@@ -72,9 +88,9 @@ class WeNotif
 			else
 				$context['quick_notifications'] = $notifications;
 		
-			// Get the unread count
+			// Get the unread count and load the disabled notifiers along with it
 			$request = wesql::query('
-				SELECT unread_notifications
+				SELECT unread_notifications, disabled_notifiers
 				FROM {db_prefix}members
 				WHERE id_member = {int:member}
 				LIMIT 1',
@@ -82,8 +98,10 @@ class WeNotif
 					'member' => $user_info['id'],
 				)
 			);
-			list ($context['unread_notifications']) = wesql::fetch_row($request);
+			list ($context['unread_notifications'], $disabled_notifiers) = wesql::fetch_row($request);
 			wesql::free_result($request);
+
+			$this->disabled = explode(',', $disabled_notifiers);
 
 			loadPluginTemplate('Dragooon:WeNotif', 'templates/plugin');
 
