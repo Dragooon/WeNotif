@@ -101,7 +101,7 @@ class WeNotif
 			list ($context['unread_notifications'], $disabled_notifiers) = wesql::fetch_row($request);
 			wesql::free_result($request);
 
-			$this->disabled = explode(',', $disabled_notifiers);
+			self::$disabled = explode(',', $disabled_notifiers);
 
 			loadPluginTemplate('Dragooon:WeNotif', 'templates/plugin');
 
@@ -522,10 +522,12 @@ class Notification
 
 	/**
 	 * Issues a new notification to a member, also calls the hook
+	 * If an array of IDs is passed as $id_member, then the same
+	 * notification is issued for all the members
 	 *
 	 * @static
 	 * @access public
-	 * @param int $id_member
+	 * @param array $id_member
 	 * @param Notifier $notifier
 	 * @param int $id_object
      * @param array $data
@@ -539,105 +541,121 @@ class Notification
     	if (empty($id_object))
     		throw new Exception('Object cannot be empty for notification');
  
- 		// Check for disabled notifications, also check if an e-mail needs to be sent
- 		//!!! Speed this thing up, an additional query should preferably be not required
+ 		$members = (array) $id_member;
+ 		$return_single = !is_array($id_member);
+
+ 		// Load the pending member's preferences for checking email notification and
+ 		// disabled notifiers
  		$request = wesql::query('
- 			SELECT disabled_notifiers, email_notifiers, email_address
+ 			SELECT disabled_notifiers, email_notifiers, email_address, id_member
  			FROM {db_prefix}members
- 			WHERE id_member = {int:member}
- 			LIMIT 1',
+ 			WHERE id_member IN ({int:member})
+ 			LIMIT {int:limit}',
  			array(
-	 			'member' => $id_member,
+	 			'member' => $members,
+	 			'limit' => count($members),
 	 		)
 	 	);
-	 	list ($disabled_notifiers, $email_notifiers, $email_address) = wesql::fetch_row($request);
+	 	while ($row = wesql::fetch_assoc($request))
+	 	{
+	 		$members[$row['id_member']] = array(
+	 			'id' => $row['id_member'],
+	 			'disabled_notifiers' => explode(',', $row['disabled_notifiers']),
+	 			'email_notifiers' => explode(',', $email_notifiers),
+	 			'email' => $row['email_address'],
+	 		);
+	 	}
 	 	wesql::free_result($request);
 
-	 	if (in_array($notifier->getName(), explode(',', $disabled_notifiers)))
-	 		return false;
-
-	 	// E-mail?
-	 	$send_email = in_array($notifier->getName(), explode(',', $email_notifiers));
-
-    	// Do we already have a notification from this notifier on this object?
+    	// Load the members' unread notifications for handling multiples
     	$request = wesql::query('
     		SELECT *
     		FROM {db_prefix}notifications
     		WHERE notifier = {string:notifier}
-    			AND id_member = {int:member}
+    			AND id_member IN ({int:member})
     			AND id_object = {int:object}
     			AND unread = 1
-    		LIMIT 1',
+    		LIMIT {int:limit}',
     		array(
 	    		'notifier' => $notifier->getName(),
 	    		'object' => $id_object,
-	    		'member' => $id_member,
+	    		'member' => array_keys($members),
+	    		'limit' => count($members),
 	    	)
 	    );
 	    // If we do, then we run it by the notifier
-	    if (wesql::num_rows($request) > 0)
+	    while ($row = wesql::fetch_assoc($request))
 	    {
-	    	$notification = new Notification(wesql::fetch_assoc($request), $notifier);
+	    	$notification = new Notification($row, $notifier);
 
-	    	// If the notifier returns false, we don't create a new notification
-	    	if (!$notifier->handleMultiple($notification, $data))
+	    	// If the notifier returns false, we drop this notification
+	    	if (!$notifier->handleMultiple($notification, $data) 
+	    		&& !in_array($notifier->getName(), $members[$row['id_member']]['disabled_notifiers']))
 	    	{
 	    		$notification->updateTime();
-	    		return $notification;
+	    		unset($members[$row['id_member']]);
 	    	}
 	    }
 	    wesql::free_result($request);
 
     	$time = time();
 
-    	// Create the row
-    	wesql::insert('', '{db_prefix}notifications', 
-    		array('id_member' => 'int', 'notifier' => 'string-50', 'id_object' => 'int', 'time' => 'int', 'unread' => 'int', 'data' => 'string'),
-    		array($id_member, $notifier->getName(), $id_object, $time, 1, serialize((array) $data)),
-    		array('id_notification')
-    	);
-    	$id_notification = wesql::insert_id();
-
-    	if (!empty($id_notification))
+    	// Process individual member's notification now
+    	$notifications = array();
+    	foreach ($members as $id_member => $pref)
     	{
-    		// Update the unread notification count
-    		wesql::query('
-    			UPDATE {db_prefix}members
-    			SET unread_notifications = unread_notifications + 1
-    			WHERE id_member = {int:member}',
-    			array(
-	    			'member' => $id_member,
-	    		)
+    		if (in_array($notifier->getName(), $pref['disabled_notifiers']))
+    			continue;
+
+	    	// Create the row
+	    	wesql::insert('', '{db_prefix}notifications', 
+	    		array('id_member' => 'int', 'notifier' => 'string-50', 'id_object' => 'int', 'time' => 'int', 'unread' => 'int', 'data' => 'string'),
+	    		array($id_member, $notifier->getName(), $id_object, $time, 1, serialize((array) $data)),
+	    		array('id_notification')
 	    	);
+	    	$id_notification = wesql::insert_id();
 
-    		$notification = new self(array(
-	    		'id_notification' => $id_notification,
-	    		'id_member' => $id_member,
-	    		'id_object' => $id_object,
-	    		'time' => $time,
-	    		'unread' => 1,
-	    		'data' => serialize((array) $data),
-	    	), $notifier);
-
-	    	call_hook('notification_new', array($notification));
-
-	    	// Send the e-mail
-	    	if ($send_email)
+	    	if (!empty($id_notification))
 	    	{
-	    		loadSource('Subs-Post');
+	    		$notifications[$id_member] = new self(array(
+		    		'id_notification' => $id_notification,
+		    		'id_member' => $id_member,
+		    		'id_object' => $id_object,
+		    		'time' => $time,
+		    		'unread' => 1,
+		    		'data' => serialize((array) $data),
+		    	), $notifier);
 
-	    		list ($subject, $body) = $notifier->getEmail($notification, $email_data);
+		    	call_hook('notification_new', array($notification));
 
-	    		sendmail($emaiL_address, $subject, $body);
-	    	}
+		    	// Send the e-mail?
+		    	if (in_array($notifier->getName(), $pref['email_notifiers']))
+		    	{
+		    		loadSource('Subs-Post');
 
-	    	// Flush the cache
-	    	cache_put_data('quick_notification_' . $id_member, array(), 0);
+		    		list ($subject, $body) = $notifier->getEmail($notification, $email_data);
 
-	    	return $notification;
-    	}
-    	else
-    		throw new Exception('Unable to create notification');
+		    		sendmail($pref['email'], $subject, $body);
+		    	}
+
+		    	// Flush the cache
+		    	cache_put_data('quick_notification_' . $id_member, array(), 0);
+		    }
+	    	else
+	    		throw new Exception('Unable to create notification');
+		}
+
+    	// Update the unread notification count
+    	wesql::query('
+    		UPDATE {db_prefix}members
+    		SET unread_notifications = unread_notifications + 1
+    		WHERE id_member IN ({int:member})',
+    		array(
+	    		'member' => array_keys($notifications),
+	    	)
+	    );
+
+	    return $return_single ? array_pop($notifications) : $notifications;
     }
 
 	/**
