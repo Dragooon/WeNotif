@@ -10,7 +10,7 @@
   </actions>
 
   <hooks>
-    <function point="load_theme" function="WeNotif::hook_load_theme" filename="$plugindir/plugin" />
+    <function point="load_theme" function="WeNotif::hook_load_theme" filename="$plugindir/plugin" priority="100" />
     <function point="profile_areas" function="WeNotif::hook_profile_areas" filename="$plugindir/plugin" />
 
     <provides>
