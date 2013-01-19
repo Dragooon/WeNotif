@@ -74,16 +74,16 @@ class WeNotif
 
 		// Load quick notifications
 		$context['quick_notifications'] = array();
-		if (!empty($user_info['id']))
+		if (!empty(we::$id))
 		{
-			$notifications = cache_get_data('quick_notification_' . $user_info['id'], 86400);
+			$notifications = cache_get_data('quick_notification_' . we::$id, 86400);
 
 			if ($notifications == null)
 			{
-				$context['quick_notifications'] = Notification::get(null, $user_info['id'], self::$quick_count, true);
+				$context['quick_notifications'] = Notification::get(null, we::$id, self::$quick_count, true);
 
 				// Cache it
-				cache_put_data('quick_notification_' . $user_info['id'], $context['quick_notifications'], 86400);
+				cache_put_data('quick_notification_' . we::$id, $context['quick_notifications'], 86400);
 			}
 			else
 				$context['quick_notifications'] = $notifications;
@@ -95,7 +95,7 @@ class WeNotif
 				WHERE id_member = {int:member}
 				LIMIT 1',
 				array(
-					'member' => $user_info['id'],
+					'member' => we::$id,
 				)
 			);
 			list ($context['unread_notifications'], $disabled_notifiers) = wesql::fetch_row($request);
@@ -125,7 +125,7 @@ class WeNotif
 		if ($area == 'redirect')
 		{
 			// We are accessing a notification and redirecting to it's target
-			list ($notification) = Notification::get((int) $_REQUEST['id'], $user_info['id']);
+			list ($notification) = Notification::get((int) $_REQUEST['id'], we::$id);
 
 			// Not found?
 			if (empty($notification))
@@ -141,7 +141,7 @@ class WeNotif
 			return self::$notifiers[$area]->action();
 
 		// Otherwise we're displaying all the notifications this user has
-		$context['notifications'] = Notification::get(null, $user_info['id'], 0);
+		$context['notifications'] = Notification::get(null, we::$id, 0);
 
 		wetem::load('notifications_list');
 	}
@@ -178,10 +178,10 @@ class WeNotif
 	 */
 	public static function profile($memID)
 	{
-		global $context, $txt, $user_info, $scripturl;
+		global $context, $txt, $scripturl;
 
 		// Not the same user? hell no
-		if ($memID != $user_info['id'])
+		if ($memID != we::$id)
 			fatal_lang_error('access_denied');
 		
 		$notifiers = self::getNotifiers();
@@ -192,7 +192,7 @@ class WeNotif
  			WHERE id_member = {int:member}
  			LIMIT 1',
  			array(
-	 			'member' => $user_info['id'],
+	 			'member' => we::$id,
 	 		)
 	 	);
 	 	list ($disabled_notifiers, $email_notifiers) = wesql::fetch_row($request);
@@ -208,7 +208,7 @@ class WeNotif
 		$config_vars = array();
 		foreach ($notifiers as $notifier)
 		{
-			list ($title, $desc, $notifier_config) = $notifier->getProfile($user_info['id']);
+			list ($title, $desc, $notifier_config) = $notifier->getProfile(we::$id);
 
 			// Add the title and desc into the array
 			$config_vars[] = array('var_message', 'title_' . $notifier->getName(),
@@ -251,7 +251,7 @@ class WeNotif
 					$email[] = $notifier->getName();
 			}
 
-			updateMemberData($user_info['id'], array(
+			updateMemberData(we::$id, array(
 				'disabled_notifiers' => implode(',', $disabled),
 				'email_notifiers' => implode(',', $email),
 			));
@@ -269,7 +269,7 @@ class WeNotif
 
 			// Call the notifier callback
 			foreach ($notifier_settings as $notifier => $settings)
-				$notifiers[$notifier]->saveProfile($user_info['id'], $settings);
+				$notifiers[$notifier]->saveProfile(we::$id, $settings);
 
 			redirectexit('action=profile;area=notification');
 		}
