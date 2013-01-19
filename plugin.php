@@ -549,7 +549,7 @@ class Notification
  		$request = wesql::query('
  			SELECT disabled_notifiers, email_notifiers, email_address, id_member
  			FROM {db_prefix}members
- 			WHERE id_member IN ({int:member})
+ 			WHERE id_member IN ({array_int:member})
  			LIMIT {int:limit}',
  			array(
 	 			'member' => $members,
@@ -572,7 +572,7 @@ class Notification
     		SELECT *
     		FROM {db_prefix}notifications
     		WHERE notifier = {string:notifier}
-    			AND id_member IN ({int:member})
+    			AND id_member IN ({array_int:member})
     			AND id_object = {int:object}
     			AND unread = 1
     		LIMIT {int:limit}',
@@ -649,7 +649,7 @@ class Notification
     	wesql::query('
     		UPDATE {db_prefix}members
     		SET unread_notifications = unread_notifications + 1
-    		WHERE id_member IN ({int:member})',
+    		WHERE id_member IN ({array_int:member})',
     		array(
 	    		'member' => array_keys($notifications),
 	    	)
