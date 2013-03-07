@@ -396,6 +396,8 @@ class WeNotif
 
 		wesql::free_result($request);
 
+		loadPluginTemplate('Dragooon:WeNotif', 'templates/plugin');
+
 		foreach ($members as $member)
 		{
 			if (empty($member['notifications']))
