@@ -48,7 +48,7 @@ class WeNotif
 	{
 		global $user_info;
 
-		return !$user_info['is_guest'] && in_array($notifier->getName(), $disabled);
+		return !$user_info['is_guest'] && in_array($notifier->getName(), self::$disabled);
 	}
 
 	/**
