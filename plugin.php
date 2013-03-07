@@ -312,7 +312,7 @@ class WeNotif
 	 * @access public
 	 * @return void
 	 */
-	public static function scheduled()
+	public static function scheduled_prune()
 	{
 		global $settings;
 
