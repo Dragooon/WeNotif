@@ -271,7 +271,7 @@ class WeNotif
 			updateMemberData(we::$id, array(
 				'disabled_notifiers' => implode(',', $disabled),
 				'email_notifiers' => json_encode($email),
-				'notify_email_period' => (int) $_POST['notify_period'],
+				'notify_email_period' => max(1, (int) $_POST['notify_period']),
 			));
 
 			// Store the notifier settings
