@@ -33,7 +33,7 @@ class WeNotif
 	 */
 	public static function getNotifiers($notifier = null)
 	{
-		return !empty($notifier) ? self::$notifiers[$notifier] : self::$notifiers;
+		return !empty($notifier) ? (!empty(self::$notifiers[$notifier]) ? self::$notifiers[$notifier] : null) : self::$notifiers;
 	}
 
 	/**
