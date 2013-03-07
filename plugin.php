@@ -401,7 +401,9 @@ interface Notifier
 
 	/**
 	 * E-mail handler, must be present since the user has the ability to receive e-mail
-	 * from any notifier
+	 * from any notifier. This only applies for instant e-mail notification, otherwise
+	 * for periodicals standard notification text is sent. This is to prevent overbearing
+	 * information in the notification e-mail
 	 *
 	 * @access public
 	 * @param Notification $notification
@@ -579,7 +581,7 @@ class Notification
 	 		$members[$row['id_member']] = array(
 	 			'id' => $row['id_member'],
 	 			'disabled_notifiers' => explode(',', $row['disabled_notifiers']),
-	 			'email_notifiers' => explode(',', $email_notifiers),
+	 			'email_notifiers' => json_decode($email_notifiers),
 	 			'email' => $row['email_address'],
 	 		);
 	 	}
