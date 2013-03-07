@@ -35,6 +35,8 @@
       <column name="unread_notifications" type="int" null="no" default="0" table="{db_prefix}members" />
       <column name="disabled_notifiers" type="varchar" size="255" default="" table="{db_prefix}members" />
       <column name="email_notifiers" type="varchar" size="255" default="" table="{db_prefix}members" />
+      <column name="notify_email_period" type="int" null="no" default="0" table="{db_prefix}members" />
+      <column name="notify_email_last_sent" type="int" null="no" default="7" table="{db_prefix}members" />
     </columns>
 
     <tables>

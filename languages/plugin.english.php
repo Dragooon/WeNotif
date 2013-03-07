@@ -20,5 +20,12 @@ $txt['scheduled_task_desc_notification_prune'] = 'Prune read notifications which
 $txt['notification_admin_desc'] = 'Settings for the notifications core';
 $txt['notifications_prune_days'] = 'Prune notifications older than (days)';
 $txt['notifications_prune_days_subtext'] = 'Any read notification older than the specified number of days will be deleted from the database. If you want to disable this feature, disable the scheduled task found under Admin > Server & Maintenance > Scheduled Tasks';
-$txt['notification_email'] = 'Receive Email?'
+$txt['notification_email'] = 'Notify via e-mail?';
+$txt['enabled'] = 'Enabled';
+$txt['disabled'] = 'Disabled';
+$txt['notify_periodically'] = 'Notify periodically';
+$txt['notify_instantly'] = 'Notify instantly';
+$txt['notify_disable'] = 'Don\'t notify via e-mail';
+$txt['notify_period_desc'] = 'The number of days after which your periodical notifications will be sent. All of your unread notifications will be grouped and sent via e-mail after this many days';
+$txt['notify_period'] = 'Periodical notification period';
 ?>

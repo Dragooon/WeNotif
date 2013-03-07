@@ -187,7 +187,7 @@ class WeNotif
 		$notifiers = self::getNotifiers();
 
  		$request = wesql::query('
- 			SELECT disabled_notifiers, email_notifiers
+ 			SELECT disabled_notifiers, email_notifiers, notify_email_period
  			FROM {db_prefix}members
  			WHERE id_member = {int:member}
  			LIMIT 1',
@@ -195,35 +195,52 @@ class WeNotif
 	 			'member' => we::$id,
 	 		)
 	 	);
-	 	list ($disabled_notifiers, $email_notifiers) = wesql::fetch_row($request);
+	 	list ($disabled_notifiers, $email_notifiers, $period) = wesql::fetch_row($request);
 	 	wesql::free_result($request);
 
 		$disabled_notifiers = explode(',', $disabled_notifiers);
-		$email_notifiers = explode(',', $email_notifiers);
+		$email_notifiers = json_decode($email_notifiers, true);
 
 		// Store which settings belong to which notifier
 		$settings_map = array();
 
 		// Assemble the config_vars for the entire page
 		$config_vars = array();
+		$config_vars[] = array(
+			'int', 'notify_period',
+			'text_label' => $txt['notify_period'],
+			'subtext' => $txt['notify_period_desc'],
+			'value' => (int) $period,
+		);
+		$config_vars[] = '';
+
 		foreach ($notifiers as $notifier)
 		{
 			list ($title, $desc, $notifier_config) = $notifier->getProfile(we::$id);
 
 			// Add the title and desc into the array
-			$config_vars[] = array('var_message', 'title_' . $notifier->getName(),
-									'text_label' => '<strong style="font-size: 1.5em;">' . $title . '</strong>',
-									'subtext' => $desc);
-
-			// Add the disable setting
-			$config_vars[] = array('check', 'disable_' . $notifier->getName(), 
-									'value' => in_array($notifier->getName(), $disabled_notifiers),
-									'text_label' => $txt['notification_disable']);
+			$config_vars[] = array(
+				'select', 'disable_' . $notifier->getName(),
+				'text_label' => $title,
+				'subtext' => $desc,
+				'data' => array(
+					array(0, $txt['enabled']),
+					array(1, $txt['disabled']),
+				),
+				'value' => in_array($notifier->getName(), $disabled_notifiers)
+			);
 
 			// Add the e-mail setting
-			$config_vars[] = array('check', 'email_' . $notifier->getName(),
-									'value' => in_array($notifier->getName(), $email_notifiers),
-									'text_label' => $txt['notification_email']);
+			$config_vars[] = array(
+				'select', 'email_' . $notifier->getName(),
+				'value' => !empty($email_notifiers[$notifier->getName()]) ? $email_notifiers[$notifier->getName()] : 0,
+				'text_label' => $txt['notification_email'],
+				'data' => array(
+					array(0, $txt['notify_periodically']),
+					array(1, $txt['notify_instantly']),
+					array(2, $txt['notify_disable']),
+				),
+			);
 
 			// Merge this with notifier config
 			$config_vars = array_merge($config_vars, $notifier_config);
@@ -248,12 +265,13 @@ class WeNotif
 				if (!empty($_POST['disable_' . $notifier->getName()]))
 					$disabled[] = $notifier->getName();
 				if (!empty($_POST['email_' . $notifier->getName()]))
-					$email[] = $notifier->getName();
+					$email[$notifier->getName()] = (int) $_POST['email_' . $notifier->getName()];
 			}
 
 			updateMemberData(we::$id, array(
 				'disabled_notifiers' => implode(',', $disabled),
-				'email_notifiers' => implode(',', $email),
+				'email_notifiers' => json_encode($email),
+				'notify_email_period' => (int) $_POST['notify_period'],
 			));
 
 			// Store the notifier settings
