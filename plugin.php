@@ -557,6 +557,8 @@ class Notification
      */
     public static function issue($id_member, Notifier $notifier, $id_object, $data = array(), $email_data = array())
     {
+    	loadSource('Subs-Post');
+    	
     	$id_object = (int) $id_object;
     	if (empty($id_object))
     		throw new Exception('Object cannot be empty for notification');
@@ -581,7 +583,7 @@ class Notification
 	 		$members[$row['id_member']] = array(
 	 			'id' => $row['id_member'],
 	 			'disabled_notifiers' => explode(',', $row['disabled_notifiers']),
-	 			'email_notifiers' => json_decode($email_notifiers),
+	 			'email_notifiers' => json_decode($email_notifiers, true),
 	 			'email' => $row['email_address'],
 	 		);
 	 	}
@@ -614,6 +616,13 @@ class Notification
 	    	{
 	    		$notification->updateTime();
 	    		unset($members[$row['id_member']]);
+
+	    		if (!empty($members[$row['id_member']]['email_notifiers'][$notifier->getName()])
+	    			&& $members[$row['id_member']]['email_notifiers'][$notifier->getName()] === 1)
+	    		{
+	    			list ($subject, $body) = $notifier->getEmail($notification, $email_data);
+	    			sendemail($members[$row['id_member']]['email'], $subject, $body);
+	    		}
 	    	}
 	    }
 	    wesql::free_result($request);
@@ -649,10 +658,9 @@ class Notification
 		    	call_hook('notification_new', array($notification));
 
 		    	// Send the e-mail?
-		    	if (in_array($notifier->getName(), $pref['email_notifiers']))
+		    	if (!empty($pref['email_notifiers'][$notifier->getName()])
+		    		&& $pref['email_notifiers'][$notifier->getName()] === 1)
 		    	{
-		    		loadSource('Subs-Post');
-
 		    		list ($subject, $body) = $notifier->getEmail($notification, $email_data);
 
 		    		sendmail($pref['email'], $subject, $body);
