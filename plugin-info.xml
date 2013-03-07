@@ -69,5 +69,6 @@
 
   <scheduledtasks>
     <task runevery="1" runfreq="day" name="notification_prune" file="$plugindir/plugin" />
+    <task runevery="6" runfreq="hour" name="notification_periodical" file="$plugindir/plugin" />
   </scheduledtasks> 
 </plugin>

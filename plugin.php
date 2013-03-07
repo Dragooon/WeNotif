@@ -325,6 +325,93 @@ class WeNotif
 			)
 		);
 	}
+
+	/**
+	 * Handled sending periodical notifications to every member
+	 *
+	 * @static
+	 * @access public
+	 * @return void
+	 */
+	public static function scheduled_periodical()
+	{
+		// Fetch all the members which have pending e-mails
+		$request = wesql::query('
+			SELECT id_member, real_name, email_address email_notifiers, disabled_notifiers, unread_notifications
+			FROM {db_prefix}members
+			WHERE unread_notifications > 0
+				AND UNIX_TIMESTAMP() > notify_email_last_sent + (notify_email_period * 86400)',
+			array()
+		);
+
+		$members = array();
+		while ($row = wesql::fetch_assoc($request))
+		{
+			$valid_notifiers = array();
+			foreach (json_decode($row['email_notifiers'], true) as $notifier => $status)
+				if ($status < 2 && !in_array($notifier, explode(',', $row['disabled_notifiers'])) && WeNotif::getNotifiers($notifier) !== null)
+					$valid_notifiers[] = $notifier;
+
+			if (empty($valid_notifiers))
+				continue;
+
+			$members[$row['id_member']] = array(
+				'id' => $row['id_member'],
+				'name' => $ow['real_name'],
+				'email' => $row['email_address'],
+				'valid_notifiers' => $valid_notifiers,
+				'notifications' => array(),
+				'unread' => $row['unread_notifications'],
+			);
+
+		}
+	
+		wesql::free_result($request);
+
+		if (empty($members))
+			return true;
+
+		// It's cheaper to check for the notifier for the members in a PHP if
+		// rather than checking in a MySQL query of huge IF/ELSE clauses
+		$request = wesql::query('
+			SELECT *
+			FROM {db_prefi}notifications
+			WHERE id_member IN ({array_int:members})
+				AND unread = 1',
+			array(
+				'members' => array_keys($members),
+			)
+		);
+
+		while ($row = wesql::fetch_assoc($request))
+			if (in_array($row['notifier'], $members[$row['id_member']]['valid_notifiers']))
+			{
+				$member = &$member[$row['id_member']];
+
+				if (empty($member['notifications'][$row['notifier']]))
+					$member['notifications'][$row['notifier']] = array();
+
+				$member['notifications'][$row['notifier']][] = new Notification($row, WeNotif::getNotifiers($row['notifier']));
+			}
+
+		wesql::free_result($request);
+
+		foreach ($members as $member)
+		{
+			if (empty($member['notifications']))
+				continue;
+
+			// Assemble the notifications into one huge text
+			$email = template_notification_email($member['notifications']);
+			$subject = sprintf($txt['notification_email_periodical_subject'], $member['name'], $member['unread']);
+
+			sendmail($member['email'], $subject, $email, null, null, true);
+		}
+
+		updateMemberData(array_keys($members), array(
+			'notify_email_last_sent' => time(),
+		));
+	}
 }
 
 function WeNotif_profile($memID)
@@ -334,7 +421,12 @@ function WeNotif_profile($memID)
 
 function scheduled_notification_prune()
 {
-	return WeNotif::scheduled();
+	return WeNotif::scheduled_prune();
+}
+
+function scheduled_notification_periodical()
+{
+	return WeNotif::scheduled_periodical();
 }
 
 /**

@@ -47,4 +47,29 @@ function template_notifications_list()
 			</p>';
 	}
 }
+
+function template_notification_email($notifications)
+{
+	global $txt;
+
+	$text = $txt['notification_email_periodical_body'] . '<br /><br />';
+
+	foreach ($notifications as $notifier => $notifs)
+	{
+		$profile = WeNotif::getNotifie($notifier)->getProfile();
+
+		$text .= '
+			<h3>' . $profile[0] . '</h3>
+			<hr />
+			<div style="margin-left: 15px;">';
+
+		foreach ($notifs as $n)
+			$text .= '<div>' . $n->getText() . '</div>';
+
+		$text .='
+			</div>';
+	}
+
+	return $text;
+}
 ?>
