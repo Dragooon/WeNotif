@@ -46,9 +46,7 @@ class WeNotif
 	 */
 	public static function isNotifierDisabled(Notifier $notifier)
 	{
-		global $user_info;
-
-		return !$user_info['is_guest'] && in_array($notifier->getName(), self::$disabled);
+		return !we::$user['is_guest'] && in_array($notifier->getName(), self::$disabled);
 	}
 
 	/**
@@ -61,7 +59,7 @@ class WeNotif
 	 */
 	public static function hook_load_theme()
 	{
-		global $context, $user_info, $scripturl, $txt;
+		global $context, $scripturl, $txt;
 
 		// Register the notifiers
 		call_hook('notification_callback', array(&self::$notifiers));
@@ -118,7 +116,7 @@ class WeNotif
 	 */
 	public static function action()
 	{
-		global $context, $user_info;
+		global $context;
 
 		$area = !empty($_REQUEST['area']) ? $_REQUEST['area'] : '';
 
