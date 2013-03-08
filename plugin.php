@@ -65,8 +65,11 @@ class WeNotif
 		call_hook('notification_callback', array(&self::$notifiers));
 
 		foreach (self::$notifiers as $notifier => $object)
-			if (!($object instanceof Notifier))
-				unset(self::$notifiers[$notifier]);
+		{
+			unset(self::$notifiers[$notifier]);
+			if ($object instanceof Notifier)
+				self::$notifiers[$object->getName()] = $object;
+		}
 
 		loadPluginLanguage('Dragooon:WeNotif', 'languages/plugin');
 
