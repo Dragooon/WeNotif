@@ -594,22 +594,22 @@ class Notification
 	 * @access public
 	 * @param int $id_member
 	 * @param Notifier $notifier
-	 * @param int $id_object
+	 * @param array $id_object
 	 * @return void
 	 */
-	public static function markReadForNotifier($id_member, Notifier $notifier, $id_object)
+	public static function markReadForNotifier($id_member, Notifier $notifier, $objects)
 	{
 		// Oh goody, we have stuff to mark as unread
 		wesql::query('
 			UPDATE {db_prefix}notifications
 			SET unread = 0
 			WHERE id_member = {int:member}
-				AND id_object = {int:object}
+				AND id_object IN ({array_int:object})
 				AND notifier = {string:notifier}
 				AND unread = 1',
 			array(
 				'member' => $id_member,
-				'object' => $id_object,
+				'object' => (array) $objects,
 				'notifier' => $notifier->getName(),
 			)
 		);
