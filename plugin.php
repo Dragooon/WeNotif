@@ -22,6 +22,7 @@ class WeNotif
 	protected static $notifiers = array();
 	protected static $quick_count = 5;
 	protected static $disabled = array();
+	protected static $pref_cache = array();
 
 	/**
 	 * Returns the notifiers
@@ -91,7 +92,7 @@ class WeNotif
 		
 			// Get the unread count and load the disabled notifiers along with it
 			$request = wesql::query('
-				SELECT unread_notifications, disabled_notifiers
+				SELECT unread_notifications, disabled_notifiers, notifier_prefs
 				FROM {db_prefix}members
 				WHERE id_member = {int:member}
 				LIMIT 1',
@@ -99,8 +100,11 @@ class WeNotif
 					'member' => we::$id,
 				)
 			);
-			list ($context['unread_notifications'], $disabled_notifiers) = wesql::fetch_row($request);
+			list ($context['unread_notifications'], $disabled_notifiers, $prefs) = wesql::fetch_row($request);
 			wesql::free_result($request);
+
+			// Automatically cache the current member's notifier preferences, save us some queries
+			self::$pref_cache[we::$id] = json_decode($prefs, true);
 
 			self::$disabled = explode(',', $disabled_notifiers);
 
@@ -108,6 +112,52 @@ class WeNotif
 
 			wetem::before('sidebar', 'notifications_block');
 		}
+	}
+
+	/**
+	 * Loads a specific member's notifier preferences
+	 *
+	 * @static
+	 * @access public
+	 * @param int $id_member
+	 * @return array
+	 */
+	public static function getPrefs($id_member)
+	{
+		if (isset(self::$pref_cache[$id_member]))
+			return self::$pref_cache[$id_member];
+
+		$request = wesql::query('
+			SELECT notifier_prefs
+			FROM {db_prefix}members
+			WHERE id_member = {int:member}
+			LIMIT 1',
+			array(
+				'member' => $id_member,
+			)
+		);
+		list($pref) = wesql::fetch_assoc($request);
+		wesql::free_result($request);
+
+		self::$pref_cache[$id_member] = json_decode($pref, true);
+
+		return self::$pref_cache[$id_member];
+	}
+
+	/**
+	 * Saves a specific member's notifier preferences
+	 *
+	 * @static
+	 * @access public
+	 * @param int $id_member
+	 * @param array $prefs
+	 * @return void
+	 */
+	public static function savePrefs($id_member, array $prefs)
+	{
+		unset(self::$pref_cache[$id_member]);
+
+		updateMemberData($id_member, array('notifier_prefs' => json_encode($prefs)));
 	}
 
 	/**
