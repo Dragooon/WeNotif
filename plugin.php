@@ -145,7 +145,8 @@ class WeNotif
 	}
 
 	/**
-	 * Saves a specific member's notifier preferences
+	 * Saves a specific member's notifier preferences. Not really meant to be used
+	 * directly but via Notifier interface
 	 *
 	 * @static
 	 * @access public
@@ -485,7 +486,7 @@ function scheduled_notification_periodical()
 /**
  * Notifier interface, every notifier adding their own stuff must implement this interface
  */
-interface Notifier
+abstract class Notifier
 {
 	/**
 	 * Callback for getting the URL of the object
@@ -494,7 +495,7 @@ interface Notifier
 	 * @param Notification $notification
 	 * @return string A fully qualified HTTP URL
 	 */
-	public function getURL(Notification $notification);
+	abstract public function getURL(Notification $notification);
 
 	/**
 	 * Callback for getting the text to display on the notification screen
@@ -503,7 +504,7 @@ interface Notifier
 	 * @param Notification $notification
 	 * @return string The text this notification wants to display
 	 */
-	public function getText(Notification $notification);
+	abstract public function getText(Notification $notification);
 
 	/**
 	 * Returns the name of this notifier
@@ -511,7 +512,7 @@ interface Notifier
 	 * @access public
 	 * @return string
 	 */
-	public function getName();
+	abstract public function getName();
 
 	/**
 	 * Callback for handling multiple notifications on the same object
@@ -521,7 +522,10 @@ interface Notifier
 	 * @param array &$data Reference to the new notification's data, if something needs to be altered
 	 * @return bool, if false then a new notification is not created but the current one's time is updated
 	 */
-	public function handleMultiple(Notification $notification, array &$data);
+	public function handleMultiple(Notification $notification, array &$data)
+	{
+		return true;
+	}
 
 	/**
 	 * Returns the elements for notification's profile area
@@ -532,7 +536,7 @@ interface Notifier
 	 * @param int $id_member The ID of the member whose profile is currently being accessed
 	 * @return array(title, description, config_vars)
 	 */
-	public function getProfile($id_member);
+	abstract public function getProfile($id_member);
 
 	/**
 	 * Callback for profile area, called when saving the profile area
@@ -542,7 +546,9 @@ interface Notifier
 	 * @param array $settings A key => value pair of the fed settings
 	 * @return void
 	 */
-	public function saveProfile($id_member, array $settings);
+	public function saveProfile($id_member, array $settings)
+	{
+	}
 
 	/**
 	 * E-mail handler, must be present since the user has the ability to receive e-mail
@@ -555,7 +561,55 @@ interface Notifier
 	 * @param array $email_data Any additional e-mail data passed to Notification::issue function
 	 * @return array(subject, body)
 	 */
-	public function getEmail(Notification $notification, array $email_data);
+	abstract public function getEmail(Notification $notification, array $email_data);
+
+	/**
+	 * Returns all the preferences for this notifier
+	 *
+	 * @access public
+	 * @param int $id_member If NULL, the current member is assumed
+	 * @return array
+	 */
+	public function getPrefs($id_member = null)
+	{
+		$all_prefs = WeNotif::getPrefs($id_member ? $id_member : we::$id);
+		return $all_prefs[$this->getName()];
+	}
+
+	/**
+	 * Shorthand for returning a single preference for the specific member
+	 *
+	 * @access public
+	 * @param string $key
+	 * @param int $id_member If NULL, assumed current member
+	 * @return mixed
+	 */
+	public function getPref($key, $id_member = null)
+	{
+		$prefs = $this->getPrefs($id_member);
+		return !empty($prefs[$key]) ? $prefs[$key] : null;
+	}
+
+	/**
+	 * Saves a specific member's preference for this notifier
+	 *
+	 * @access public
+	 * @param string $key
+	 * @param mixed $value
+	 * @param int $id_member If NULL, assumed current member
+	 * @return void
+	 */
+	public function savePref($key, $value, $id_member = null)
+	{
+		$prefs = WeNotif::getPrefs($id_member ? $id_member : we::$id);
+
+		if (empty($prefs[$this->getName()]))
+			$prefs[$this->getName()] = array();
+
+		$prefs[$this->getName()][$key] = $value;
+
+		WeNotif::savePrefs($id_member ? $id_member : we::$id, $prefs);
+	}
 }
 
 /**
