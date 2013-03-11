@@ -782,7 +782,7 @@ class Notification
 	 		$members[$row['id_member']] = array(
 	 			'id' => $row['id_member'],
 	 			'disabled_notifiers' => explode(',', $row['disabled_notifiers']),
-	 			'email_notifiers' => json_decode($email_notifiers, true),
+	 			'email_notifiers' => json_decode($row['email_notifiers'], true),
 	 			'email' => $row['email_address'],
 	 		);
 	 	}
