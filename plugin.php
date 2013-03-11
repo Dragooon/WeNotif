@@ -20,7 +20,7 @@ if (!defined('WEDGE'))
 class WeNotif
 {
 	protected static $notifiers = array();
-	protected static $quick_count = 5;
+	protected static $quick_count = 25;
 	protected static $disabled = array();
 	protected static $pref_cache = array();
 
@@ -75,21 +75,10 @@ class WeNotif
 		loadPluginLanguage('Dragooon:WeNotif', 'languages/plugin');
 
 		// Load quick notifications
-		$context['quick_notifications'] = array();
 		if (!empty(we::$id))
 		{
-			$notifications = cache_get_data('quick_notification_' . we::$id, 86400);
-
-			if ($notifications == null)
-			{
-				$context['quick_notifications'] = Notification::get(null, we::$id, self::$quick_count, true);
-
-				// Cache it
-				cache_put_data('quick_notification_' . we::$id, $context['quick_notifications'], 86400);
-			}
-			else
-				$context['quick_notifications'] = $notifications;
-		
+			$quick_notifications = self::get_quick_notifications();
+			
 			// Get the unread count and load the disabled notifiers along with it
 			$request = wesql::query('
 				SELECT unread_notifications, disabled_notifiers, notifier_prefs
@@ -111,7 +100,49 @@ class WeNotif
 			loadPluginTemplate('Dragooon:WeNotif', 'templates/plugin');
 
 			wetem::before('sidebar', 'notifications_block');
+
+			add_js_inline('
+				var $notifications = ', json_encode(array(
+					'count' => $context['unread_notifications'],
+					'notifications' => $quick_notifications,
+				)), ';
+			');
+			add_plugin_js_file('Dragooon:WeNotif', 'templates/plugin.js');
+			add_plugin_css_file('Dragooon:WeNotif', 'templates/plugin.css');
 		}
+	}
+
+	/**
+	 * Caches and loads quick notifications, also serializes them into array for quick access
+	 *
+	 * @static
+	 * @access protected
+	 * @return array
+	 */
+	protected static function get_quick_notifications()
+	{
+		$notifications = cache_get_data('quick_notification_' . we::$id, 86400);
+
+		if ($notifications == null)
+		{
+			$notifications = Notification::get(null, we::$id, self::$quick_count, true);
+
+			// Cache it
+			cache_put_data('quick_notification_' . we::$id, $context['quick_notifications'], 86400);
+		}
+
+		$notifs = array();
+		foreach ($notifications as $notification)
+		{
+			$notifs[] = array(
+				'id' => $notification->getID(),
+				'text' => $notification->getText(),
+				'url' => $notification->getURL(),
+				'time' => timeformat($notification->getTime()),
+			);
+		}
+
+		return $notifs;
 	}
 
 	/**
@@ -172,6 +203,9 @@ class WeNotif
 	{
 		global $context;
 
+		if (we::$user['is_guest'])
+			fatal_lang_error('access_denied');
+
 		$area = !empty($_REQUEST['area']) ? $_REQUEST['area'] : '';
 
 		if ($area == 'redirect')
@@ -188,6 +222,31 @@ class WeNotif
 
 			// Redirect to the target
 			redirectexit($notification->getURL());
+		}
+		elseif ($area == 'getunread')
+		{
+			header('Content-type: application/json; charset=utf-8');
+
+			$notifications = self::get_quick_notifications();
+
+			$request = wesql::query('
+				SELECT unread_notifications
+				FROM {db_prefix}members
+				WHERE id_member = {int:member}
+				LIMIT 1',
+				array(
+					'member' => we::$id,
+				)
+			);
+			list ($unread_count) = wesql::fetch_row($request);
+			wesql::free_result($request);
+
+			echo json_encode(array(
+				'count' => $unread_count,
+				'notifications' => $notifications,
+			));
+
+			exit;
 		}
 		elseif (!empty($area) && !empty(self::$notifiers[$area]) && is_callable(self::$notifiers[$area], 'action'))
 			return self::$notifiers[$area]->action();

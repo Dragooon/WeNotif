@@ -17,17 +17,31 @@ function template_notifications_block()
 
 	echo '
 	<section>
-		<span class="note', $context['unread_notifications'] ? 'nice' : '', '" style="font-size: 9pt;">', $context['unread_notifications'], '</span>&nbsp;
-		<a href="', $scripturl, '?action=notification" class="title">', $txt['notification_unread_title'], '</a>';
-	foreach ($context['quick_notifications'] as $notification)
-	{
-		echo '
-			<p class="description" style="font-size: 1em; cursor: pointer;" onclick="document.location = \'', $scripturl, '?action=notification;area=redirect;id=', $notification->getID(), '\'">
-				', $notification->getText(), '<br />
-				<span class="smalltext">', timeformat($notification->getTime()), '</span>
-			</p>';
-	}
-	echo '
+		<header class="title">
+			<span class="note', $context['unread_notifications'] ? 'nice' : '', '" style="font-size: 0.9em; cursor: pointer;" id="notification_handle">
+			', $context['unread_notifications'], '
+			</span>
+			&nbsp;', $txt['notifications'], '
+		</header>
+        <div class="mimenu" id="notification_shade" style="max-width: 250px;">
+            <ul class="actions" style="white-space: normal;">
+                <li>
+                	<header class="title">
+                		', $txt['notifications'], '&nbsp;
+                		<a href="<URL>?action=notification" style="display: inline; padding: 0; fonnt-size: 0.2em;">(', $txt['view_all'], ')</a>
+                	</header>
+                	<div class="notification_container" style="max-height: 24em; overflow: auto;">
+	                   	<div class="notification template" style="cursor: pointer;">
+	                    	<div class="notification_text" style="color: #444; padding-left: 10px; padding-top: 10px;">
+	                    	</div>
+	                    	<div class="notification_time" class="smalltext" style="text-align: right;">
+	                    	</div>
+	                    	<hr style="margin: 0;" />
+	                    </div>
+	                </div>
+                </li>
+            </ul>
+        </div>
 	</section>';
 }
 

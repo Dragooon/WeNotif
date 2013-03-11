@@ -32,4 +32,4 @@ $txt['scheduled_task_notification_periodical'] = 'Send periodical notification e
 $txt['scheduled_task_desc_notification_periodical'] = 'Sends all the periodical notification e-mails for the members who have unread notifications';
 $txt['notification_email_periodical_subject'] = '%s, you have %d unread notification(s)!';
 $txt['notification_email_periodical_body'] = 'It looks like you have gathered a bunch of unread notifications over the past few days, here is the gist of them. Head over to the forums to check them out!';
-?>
+$txt['view_all'] = 'view all';
