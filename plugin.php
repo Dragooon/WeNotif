@@ -609,6 +609,32 @@ abstract class Notifier
 
 		WeNotif::savePrefs($id_member ? $id_member : we::$id, $prefs);
 	}
+
+	/**
+	 * This hook is called right before any actual notification is sent
+	 * If the function returns false, the notification is not sent.
+	 *
+	 * @access public
+	 * @param array &$members An array of members with ID as the key
+	 * @param int &$id_object
+	 * @param array &$data Any data passed to the Notification::issue
+	 * @return bool
+	 */
+	public function beforeNotify(array &$members, &$id_object, array &$data)
+	{
+		return true;
+	}
+
+	/**
+	 * This hook is called after a notification has been issued
+	 *
+	 * @access public
+	 * @param Notification $notification
+	 * @return void
+	 */
+	public function afterNotify(Notification $notification)
+	{
+	}
 }
 
 /**
@@ -786,6 +812,10 @@ class Notification
 	 	}
 	 	wesql::free_result($request);
 
+	 	// Run this by the notifier before we do anything else
+	 	if (!$notifier->beforeNotify($members, $id_object, $data))
+	 		return false;
+
     	// Load the members' unread notifications for handling multiples
     	$request = wesql::query('
     		SELECT *
@@ -879,6 +909,9 @@ class Notification
 	    		'member' => array_keys($notifications),
 	    	)
 	    );
+
+    	// Run the post notify hook
+    	$notifier->afterNotify($notifications);
 
 	    return $return_single ? array_pop($notifications) : $notifications;
     }
