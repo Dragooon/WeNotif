@@ -740,7 +740,7 @@ class Notification
 				AND notifier = {string:notifier}
 				AND unread = 1',
 			array(
-				'member' => $id_member,
+				'member' => (int) $id_member,
 				'object' => (array) $objects,
 				'notifier' => $notifier->getName(),
 			)
