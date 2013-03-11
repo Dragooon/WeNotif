@@ -801,6 +801,7 @@ class Notification
 	 			'limit' => count($members),
 	 		)
 	 	);
+	 	$members = array();
 	 	while ($row = wesql::fetch_assoc($request))
 	 	{
 	 		$members[$row['id_member']] = array(
@@ -855,6 +856,9 @@ class Notification
 	    wesql::free_result($request);
 
     	$time = time();
+
+    	if (empty($members))
+    		return array();
 
     	// Process individual member's notification now
     	$notifications = array();
