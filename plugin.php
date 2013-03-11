@@ -520,9 +520,10 @@ abstract class Notifier
 	 * @access public
 	 * @param Notification $notification
 	 * @param array &$data Reference to the new notification's data, if something needs to be altered
+	 * @param array &$email_data Any extra e-mail data passed
 	 * @return bool, if false then a new notification is not created but the current one's time is updated
 	 */
-	public function handleMultiple(Notification $notification, array &$data)
+	public function handleMultiple(Notification $notification, array &$data, array &$email_data)
 	{
 		return true;
 	}
@@ -558,9 +559,10 @@ abstract class Notifier
 	 *
 	 * @access public
 	 * @param Notification $notification
+	 * @param array $email_data
 	 * @return array(subject, body)
 	 */
-	abstract public function getEmail(Notification $notification);
+	abstract public function getEmail(Notification $notification, array $email_data);
 
 	/**
 	 * Returns all the preferences for this notifier
@@ -618,9 +620,10 @@ abstract class Notifier
 	 * @param array &$members An array of members with ID as the key
 	 * @param int &$id_object
 	 * @param array &$data Any data passed to the Notification::issue
+	 * @param array &$email_data
 	 * @return bool
 	 */
-	public function beforeNotify(array &$members, &$id_object, array &$data)
+	public function beforeNotify(array &$members, &$id_object, array &$data, array &$email_data)
 	{
 		return true;
 	}
@@ -775,10 +778,11 @@ class Notification
 	 * @param Notifier $notifier
 	 * @param int $id_object
      * @param array $data
+     * @param array $email_data
      * @return Notification
      * @throws Exception, upon the failure of creating a notification for whatever reason
      */
-    public static function issue($id_member, Notifier $notifier, $id_object, $data = array())
+    public static function issue($id_member, Notifier $notifier, $id_object, $data = array(), $email_data = array())
     {
     	loadSource('Subs-Post');
     	
@@ -814,7 +818,7 @@ class Notification
 	 	wesql::free_result($request);
 
 	 	// Run this by the notifier before we do anything else
-	 	if (!$notifier->beforeNotify($members, $id_object, $data))
+	 	if (!$notifier->beforeNotify($members, $id_object, $data, $email_data))
 	 		return false;
 
     	// Load the members' unread notifications for handling multiples
@@ -839,7 +843,7 @@ class Notification
 	    	$notification = new Notification($row, $notifier);
 
 	    	// If the notifier returns false, we drop this notification
-	    	if (!$notifier->handleMultiple($notification, $data) 
+	    	if (!$notifier->handleMultiple($notification, $data, $email_data) 
 	    		&& !in_array($notifier->getName(), $members[$row['id_member']]['disabled_notifiers']))
 	    	{
 	    		$notification->updateTime();
@@ -848,7 +852,7 @@ class Notification
 	    		if (!empty($members[$row['id_member']]['email_notifiers'][$notifier->getName()])
 	    			&& $members[$row['id_member']]['email_notifiers'][$notifier->getName()] === 1)
 	    		{
-	    			list ($subject, $body) = $notifier->getEmail($notification);
+	    			list ($subject, $body) = $notifier->getEmail($notification, $email_data);
 	    			sendemail($members[$row['id_member']]['email'], $subject, $body);
 	    		}
 	    	}
@@ -892,7 +896,7 @@ class Notification
 		    	if (!empty($pref['email_notifiers'][$notifier->getName()])
 		    		&& $pref['email_notifiers'][$notifier->getName()] === 1)
 		    	{
-		    		list ($subject, $body) = $notifier->getEmail($notification);
+		    		list ($subject, $body) = $notifier->getEmail($notification, $email_data);
 
 		    		sendmail($pref['email'], $subject, $body);
 		    	}
