@@ -558,10 +558,9 @@ abstract class Notifier
 	 *
 	 * @access public
 	 * @param Notification $notification
-	 * @param array $email_data Any additional e-mail data passed to Notification::issue function
 	 * @return array(subject, body)
 	 */
-	abstract public function getEmail(Notification $notification, array $email_data);
+	abstract public function getEmail(Notification $notification);
 
 	/**
 	 * Returns all the preferences for this notifier
@@ -750,11 +749,10 @@ class Notification
 	 * @param Notifier $notifier
 	 * @param int $id_object
      * @param array $data
-     * @param array $email_data Any additional data you may want to pass to the e-mail handler
      * @return Notification
      * @throws Exception, upon the failure of creating a notification for whatever reason
      */
-    public static function issue($id_member, Notifier $notifier, $id_object, $data = array(), $email_data = array())
+    public static function issue($id_member, Notifier $notifier, $id_object, $data = array())
     {
     	loadSource('Subs-Post');
     	
@@ -819,7 +817,7 @@ class Notification
 	    		if (!empty($members[$row['id_member']]['email_notifiers'][$notifier->getName()])
 	    			&& $members[$row['id_member']]['email_notifiers'][$notifier->getName()] === 1)
 	    		{
-	    			list ($subject, $body) = $notifier->getEmail($notification, $email_data);
+	    			list ($subject, $body) = $notifier->getEmail($notification);
 	    			sendemail($members[$row['id_member']]['email'], $subject, $body);
 	    		}
 	    	}
@@ -860,7 +858,7 @@ class Notification
 		    	if (!empty($pref['email_notifiers'][$notifier->getName()])
 		    		&& $pref['email_notifiers'][$notifier->getName()] === 1)
 		    	{
-		    		list ($subject, $body) = $notifier->getEmail($notification, $email_data);
+		    		list ($subject, $body) = $notifier->getEmail($notification);
 
 		    		sendmail($pref['email'], $subject, $body);
 		    	}
