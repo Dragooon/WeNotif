@@ -17,18 +17,21 @@ function template_notifications_block()
 
 	echo '
 	<section>
-		<header class="title">
-			<span class="note', $context['unread_notifications'] ? 'nice' : '', '" style="font-size: 0.9em; cursor: pointer;" id="notification_handle">
+		<header class="title notification_trigger" style="cursor: pointer;">
+			<span class="notification_count note', $context['unread_notifications'] ? 'nice' : '', '" style="font-size: 0.9em;">
 			', $context['unread_notifications'], '
 			</span>
-			&nbsp;', $txt['notifications'], '
+			', $txt['notifications'], '
 		</header>
-        <div class="mimenu" id="notification_shade" style="max-width: 250px;">
+        <div class="mimenu" id="notification_shade" style="max-width: 250px; padding: 0; background: none;">
             <ul class="actions" style="white-space: normal;">
                 <li>
-                	<header class="title">
-                		', $txt['notifications'], '&nbsp;
-                		<a href="<URL>?action=notification" style="display: inline; padding: 0; fonnt-size: 0.2em;">(', $txt['view_all'], ')</a>
+                	<header class="title notification_trigger">
+						<span class="notification_count note', $context['unread_notifications'] ? 'nice' : '', '" style="font-size: 0.9em; cursor: pointer;">
+						', $context['unread_notifications'], '
+						</span>
+						', $txt['notifications'], '
+                		<a href="<URL>?action=notification" style="display: inline; padding: 0; font-size: 0.6em;">(', $txt['view_all'], ')</a>
                 	</header>
                 	<div class="notification_container" style="max-height: 24em; overflow: auto;">
 	                   	<div class="notification template" style="cursor: pointer;">

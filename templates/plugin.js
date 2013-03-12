@@ -15,29 +15,58 @@
     var $shade = $("#notification_shade").remove().appendTo(document.body).hide();
     $shade.find('.template').hide();
 
-    var $is_open = false;
-    $('#notification_handle').click(function()
+    var $hovering = false,
+        $timer = 0,
+        $is_open = false;
+
+    $shade.hover(function()
+    {
+        $hovering = true;
+    }, function()
+    {
+        $hovering = false;
+    });
+
+    $(document.body).click(function()
+    {
+        if (!$hovering && $is_open && +new Date() - $timer > 200)
+        {
+            $shade.fadeOut('fast');
+            $is_open = false;
+            $hovering = false;
+        }
+    });
+
+    $('.notification_trigger').click(function()
     {
         if ($is_open)
         {
             $is_open = false;
 
-            $shade.fadeOut();
-
-            return true;
+            $shade.fadeOut('fast');
         }
+        else
+        {
+            $is_open = true;
+            var $offset = $(this).parent().offset();
+            $offset.top -= 6;
+            $offset.left -= 15;
+            $timer = +new Date();
 
-        $is_open = true;
-        var $offset = $(this).offset();
-        $offset.top += $(this).height();
-        $offset.left -= $(this).width() / 2;
-        $shade
-            .offset($offset)
-            .fadeIn();
+            // Yeah I know I didn't need to set top and left CSS manually
+            // but it was adding it to the current offset instead of overwriting it
+            // hence on second or third viewing things would get weird
+            $shade
+                .css('top', $offset.top)
+                .css('left', $offset.left)
+                .fadeIn('fast');
+        }
     });
 
     var updateNotification = function(data)
     {
+        $shade.find('.notification_container > .notification:not(.template)').remove();
+
         $.each(data.notifications, function(index, item)
         {
             var $template = $shade.find('.template').clone().show();
