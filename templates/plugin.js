@@ -17,7 +17,8 @@
 
     var $hovering = false,
         $timer = 0,
-        $is_open = false;
+        $is_open = false,
+        original_title = $('title').text();
 
     $shade.hover(function()
     {
@@ -91,7 +92,33 @@
 
             $template.appendTo($shade.find('.template').parent());
         });
+
+        $('.notification_count').text(data.count);
+        if (data.count > 0)
+            $('.notification_count').removeClass('note').addClass('notenice');
+        else
+            $('.notification_count').removeClass('notenice').addClass('note');
+
+        if (data.count > 0)
+            $('title').text('(' + data.count + ') ' + original_title);
+        else
+            $('title').text(original_title);
     };
 
     updateNotification($notifications);
+
+    // Update the notification every 3 minutes
+    var auto_update = function()
+    {
+        $.ajax({
+            url: we_script + '?action=notification;area=getunread',
+            success: function(data)
+            {
+                updateNotification(data);
+                setTimeout(auto_update, 1000 * 60 * 3);
+            }
+        });
+    };
+
+    setTimeout(auto_update, 1000 * 60 * 3);
  });
