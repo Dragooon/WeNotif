@@ -37,7 +37,11 @@ function template_notifications_block()
 	                   	<div class="notification template" style="cursor: pointer;">
 	                    	<div class="notification_text" style="color: #444; padding-left: 10px; padding-top: 10px;">
 	                    	</div>
-	                    	<div class="notification_time" class="smalltext" style="text-align: right;">
+	                    	<div style="width: 100%; padding-bottom: 10px;">
+	                    		<div class="notification_markread" style="float: left; width: 10px; padding: 0 10px 0px 10px; display: none;">x</div>
+	                    		<div class="notification_time" class="smalltext" style="float: right; width: 70%; text-align: right;">
+	                    		</div>
+	                    		<br style="clear: both;" />
 	                    	</div>
 	                    	<hr style="margin: 0;" />
 	                    </div>

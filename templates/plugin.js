@@ -73,7 +73,6 @@
             var $template = $shade.find('.template').clone().show();
             $template.removeClass('template');
 
-            $template.prop('data-url', we_script + '?action=notification;area=redirect;id=' + item.id);
             $template.find('.notification_text').html(item.text);
             $template.find('.notification_time').html(item.time);
 
@@ -81,13 +80,45 @@
                 .hover(function()
                 {
                     $(this).addClass('windowbg2');
+                    $(this).find('.notification_markread').show();
                 }, function()
                 {
                     $(this).removeClass('windowbg2');
+                    $(this).find('.notification_markread').hide();
                 })
-                .click(function()
+                .click({
+                        url: we_script + '?action=notification;area=redirect;id=' + item.id
+                    }, function(e)
+                    {
+                        document.location = e.data.url;
+                    }
+                );
+
+            $template.find('.notification_markread')
+                .click({
+                        url: we_script + '?action=notification;area=markread;id=' + item.id,
+                        notification: $template
+                    }, function(e)
+                    {
+                        e.data.notification.remove();
+                        var count = parseInt($('.notification_count:first').text()) - 1;
+                        $('.notification_count').text(count);
+                        if (count == 0)
+                            $('.notification_count').removeClass('notenice').addClass('note');
+
+                        $.get(e.data.url);
+
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                    }
+                )
+                .hover(function()
                 {
-                    document.location = $template.prop('data-url');
+                    $(this).addClass('windowbg');
+                }, function()
+                {
+                    $(this).removeClass('windowbg');
                 });
 
             $template.appendTo($shade.find('.template').parent());

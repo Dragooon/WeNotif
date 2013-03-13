@@ -248,6 +248,15 @@ class WeNotif
 
 			exit;
 		}
+		elseif ($area == 'markread' && !empty($_REQUEST['id']))
+		{
+			$notifications = Notification::get($_REQUEST['id'], we::$id);
+
+			if (!empty($notifications[0]))
+				$notifications[0]->markAsRead();
+
+			redirectexit();
+		}
 		elseif (!empty($area) && !empty(self::$notifiers[$area]) && is_callable(self::$notifiers[$area], 'action'))
 			return self::$notifiers[$area]->action();
 
