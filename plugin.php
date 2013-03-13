@@ -955,7 +955,7 @@ class Notification
 		    	if (!empty($pref['email_notifiers'][$notifier->getName()])
 		    		&& $pref['email_notifiers'][$notifier->getName()] === 1)
 		    	{
-		    		list ($subject, $body) = $notifier->getEmail($notification, $email_data);
+		    		list ($subject, $body) = $notifier->getEmail($notifications[$id_member], $email_data);
 
 		    		sendmail($pref['email'], $subject, $body);
 		    	}
